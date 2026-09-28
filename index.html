@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FAF8F5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="记账本">
+<meta name="mobile-web-app-capable" content="yes">
+<title>记账本</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231B4332'/%3E%3Ctext x='96' y='120' font-size='80' text-anchor='middle' fill='%23D4A574' font-family='serif'%3E%E6%9C%AC%3C/text%3E%3C/svg%3E">
+
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js" integrity="sha384-pPi0zxBAoDu6+JXW/C68UZLvBUUtU+7zonhif43rqj7pxsGyqyqzcian2Rj37Rss" crossorigin="anonymous"></script>
+
+<style>
+:root {
+  --bg:#FAF8F5;--card:#FFFFFF;--card-hover:#F5F2ED;--border:#E8E4DE;--border-light:#F0EDE7;
+  --text-primary:#1A1A1A;--text-secondary:#6B6B6B;--text-tertiary:#9B9B9B;
+  --primary:#1B4332;--primary-light:#2D6A4F;--primary-bg:#EDF2EF;
+  --expense:#C44536;--expense-bg:#FDF0EE;
+  --income:#2D6A4F;--income-bg:#EDF5F0;
+  --lend:#E67E22;--lend-bg:#FDF3E7;
+  --borrow:#2980B9;--borrow-bg:#EBF5FB;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06);--shadow-md:0 4px 12px rgba(0,0,0,0.08);--shadow-lg:0 8px 30px rgba(0,0,0,0.12);
+  --radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:20px;--nav-height:60px;
+}
+[data-theme="dark"] {
+  --bg:#121212;--card:#1E1E1E;--card-hover:#252525;--border:#333;--border-light:#2A2A2A;
+  --text-primary:#E8E8E8;--text-secondary:#999;--text-tertiary:#666;
+  --primary:#2D6A4F;--primary-light:#40916C;--primary-bg:#1A2E24;
+  --expense:#E07A6B;--expense-bg:#2A1A18;--income:#52B788;--income-bg:#1A2A22;
+  --lend:#F39C12;--lend-bg:#2A2010;--borrow:#3498DB;--borrow-bg:#10202A;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text-primary);font-size:15px;line-height:1.5}
+body{display:flex;flex-direction:column}
+#app{flex:1;display:flex;flex-direction:column;overflow:hidden;max-width:640px;margin:0 auto;width:100%;position:relative}
+.view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:none;padding-bottom:calc(60px + env(safe-area-inset-bottom) + 16px)}
+.view.active{display:block}
+
+.app-header{padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between}
+.app-title{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;color:var(--primary);letter-spacing:1px}
+.header-btn{width:36px;height:36px;border-radius:50%;border:none;background:var(--card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+
+.summary-card{margin:0 16px 16px;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);border-radius:var(--radius-xl);padding:20px 24px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)}
+.summary-card::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(212,165,116,0.15)}
+.summary-label{font-size:13px;opacity:0.8;margin-bottom:4px;position:relative;z-index:1}
+.summary-balance{font-family:'Noto Serif SC',serif;font-size:32px;font-weight:700;margin-bottom:14px;position:relative;z-index:1}
+.summary-balance .currency{font-size:18px;margin-right:2px}
+.summary-row{display:flex;gap:12px;position:relative;z-index:1;flex-wrap:wrap}
+.summary-item{flex:1;min-width:80px}
+.summary-item-label{font-size:11px;opacity:0.75;margin-bottom:2px}
+.summary-item-value{font-size:15px;font-weight:600;font-family:'Noto Serif SC',serif}
+.summary-loan-row{display:flex;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);position:relative;z-index:1}
+.summary-loan-item{flex:1;text-align:center}
+.summary-loan-item .label{font-size:11px;opacity:0.75}
+.summary-loan-item .value{font-size:14px;font-weight:600;font-family:'Noto Serif SC',serif;margin-top:2px}
+
+.section-title{padding:8px 20px 10px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.section-title .more{font-size:13px;color:var(--text-tertiary);cursor:pointer}
+
+.quick-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 16px 16px}
+.quick-action{background:var(--card);border-radius:var(--radius-lg);padding:16px 8px;text-align:center;cursor:pointer;box-shadow:var(--shadow-sm);border:none;color:var(--text-primary);font-family:inherit}
+.quick-action:active{transform:scale(0.96);background:var(--card-hover)}
+.quick-action-icon{width:42px;height:42px;margin:0 auto 6px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.quick-action-label{font-size:13px;font-weight:500}
+
+.pending-repay-section{padding:0 16px 16px}
+.pending-repay-list{background:var(--card);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm)}
+.pending-repay-item{display:flex;align-items:center;padding:12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.pending-repay-item:last-child{border-bottom:none}
+.pending-repay-item:active{background:var(--card-hover)}
+.pending-repay-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0}
+.pending-repay-info{flex:1;min-width:0}
+.pending-repay-name{font-size:14px;font-weight:500;color:var(--text-primary);display:flex;align-items:center;gap:6px}
+.pending-repay-meta{font-size:12px;color:var(--text-tertiary);margin-top:2px}
+.pending-repay-amount{font-size:15px;font-weight:600;flex-shrink:0;margin-left:8px}
+.pending-repay-empty{text-align:center;padding:20px;color:var(--text-tertiary);font-size:13px}
+
+.recent-list{padding:0 16px}
+.tx-group{margin-bottom:16px}
+.tx-group-header{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;font-size:13px;color:var(--text-secondary)}
+.tx-group-date{font-weight:500}
+.tx-group-summary{font-size:12px;color:var(--text-tertiary)}
+.tx-item{display:flex;align-items:center;padding:12px;background:var(--card);border-radius:var(--radius-md);margin-bottom:6px;box-shadow:var(--shadow-sm);cursor:pointer}
+.tx-item:active{background:var(--card-hover)}
+.tx-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-category{font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px}
+.tx-tag{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:500;flex-shrink:0}
+.tx-tag.lend{background:var(--lend-bg);color:var(--lend)}
+.tx-tag.borrow{background:var(--borrow-bg);color:var(--borrow)}
+.tx-tag.repay{background:var(--primary-bg);color:var(--primary)}
+.tx-note{font-size:12px;color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.tx-amount{font-size:16px;font-weight:600;font-family:'Noto Serif SC',serif;flex-shrink:0}
+.tx-amount.expense{color:var(--expense)}.tx-amount.income{color:var(--income)}
+.tx-amount.lend{color:var(--lend)}.tx-amount.borrow{color:var(--borrow)}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-tertiary)}
+.empty-state-text{font-size:14px}
+
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;height:calc(60px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--card);border-top:1px solid var(--border);display:flex;z-index:100}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--text-tertiary);border:none;background:none;font-family:inherit}
+.nav-item.active{color:var(--primary)}
+.nav-item svg{width:22px;height:22px}
+.nav-item span{font-size:11px}
+
+.fab{position:fixed;bottom:calc(60px + env(safe-area-inset-bottom) + 16px);right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:#fff;border:none;box-shadow:var(--shadow-lg);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:99}
+.fab:active{transform:scale(0.9)}
+
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg);width:100%;max-width:640px;border-radius:var(--radius-xl) var(--radius-xl) 0 0;max-height:90vh;overflow-y:auto;animation:slideUp 0.3s ease;padding-bottom:env(safe-area-inset-bottom)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-light)}
+.modal-title{font-size:17px;font-weight:600;font-family:'Noto Serif SC',serif}
+.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px}
+.modal-body{padding:16px 20px 24px}
+
+.type-toggle{display:flex;background:var(--card);border-radius:var(--radius-md);padding:4px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.type-toggle-btn{flex:1;padding:10px;border:none;background:transparent;border-radius:var(--radius-sm);font-size:14px;font-weight:500;color:var(--text-secondary);cursor:pointer;font-family:inherit}
+.type-toggle-btn.active.expense-type{background:var(--expense-bg);color:var(--expense)}
+.type-toggle-btn.active.income-type{background:var(--income-bg);color:var(--income)}
+.type-toggle-btn.active.loan-type{background:var(--lend-bg);color:var(--lend)}
+
+.loan-direction-toggle{display:flex;background:var(--card);border-radius:var(--radius-md);padding:4px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.loan-direction-btn{flex:1;padding:10px;border:none;background:transparent;border-radius:var(--radius-sm);font-size:14px;font-weight:500;color:var(--text-secondary);cursor:pointer;font-family:inherit}
+.loan-direction-btn.active.lend-dir{background:var(--lend-bg);color:var(--lend)}
+.loan-direction-btn.active.borrow-dir{background:var(--borrow-bg);color:var(--borrow)}
+
+.payment-toggle{display:flex;background:var(--card);border-radius:var(--radius-md);padding:4px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.payment-btn{flex:1;padding:8px;border:none;background:transparent;border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px}
+.payment-btn.active.normal-pay{background:var(--income-bg);color:var(--income)}
+.payment-btn.active.huabei-pay{background:#F4ECF7;color:#9B59B6}
+.huabei-hint{font-size:12px;color:#9B59B6;background:#F4ECF7;padding:6px 10px;border-radius:var(--radius-sm);margin-bottom:12px;text-align:center}
+
+.loan-group-summary{background:var(--card);border-radius:var(--radius-md);padding:14px;margin-bottom:12px}
+.loan-group-title{font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.loan-group-amount-row{display:flex;gap:8px;margin-bottom:10px}
+.loan-group-amount-item{flex:1;text-align:center;padding:8px;background:var(--bg);border-radius:var(--radius-sm)}
+.loan-group-amount-item .label{font-size:11px;color:var(--text-tertiary);margin-bottom:2px}
+.loan-group-amount-item .value{font-size:15px;font-weight:600}
+.loan-group-detail-item{display:flex;align-items:center;padding:8px 0;border-top:1px solid var(--border)}
+.loan-group-detail-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;flex-shrink:0}
+.loan-group-detail-info{flex:1;min-width:0}
+.loan-group-detail-name{font-size:13px;color:var(--text-primary);font-weight:500}
+.loan-group-detail-meta{font-size:11px;color:var(--text-tertiary);margin-top:2px}
+.loan-group-detail-amount{font-size:14px;font-weight:600;flex-shrink:0;margin-left:8px}
+
+.amount-section{text-align:center;margin-bottom:16px}
+.amount-display{font-family:'Noto Serif SC',serif;font-size:40px;font-weight:700;border:none;background:transparent;width:100%;text-align:center;outline:none;color:var(--text-primary)}
+.amount-currency{font-size:20px;color:var(--text-secondary);margin-right:4px}
+
+.category-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.category-item{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:var(--radius-md);cursor:pointer;border:2px solid transparent;background:var(--card)}
+.category-item:active{transform:scale(0.92)}
+.category-item.selected{border-color:var(--primary);background:var(--primary-bg)}
+.category-item-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.category-item-name{font-size:11px;color:var(--text-secondary);text-align:center;white-space:nowrap}
+.category-item.selected .category-item-name{color:var(--primary);font-weight:500}
+
+.subcategory-section{margin-bottom:16px}
+.subcategory-label{font-size:13px;color:var(--text-secondary);margin-bottom:8px}
+.subcategory-chips{display:flex;flex-wrap:wrap;gap:8px}
+.subcategory-chip{padding:6px 14px;border-radius:20px;background:var(--card);border:1px solid var(--border);font-size:13px;color:var(--text-secondary);cursor:pointer}
+.subcategory-chip.selected{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:13px;color:var(--text-secondary);margin-bottom:6px}
+.form-input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:14px;background:var(--card);color:var(--text-primary);outline:none;font-family:inherit}
+.form-input:focus{border-color:var(--primary)}
+.form-row{display:flex;gap:10px}
+.form-row .form-group{flex:1}
+
+.submit-btn{width:100%;padding:14px;border:none;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:#fff;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px}
+.submit-btn:active{transform:scale(0.98);opacity:0.9}
+
+/* Stats */
+.stats-period-tabs{display:flex;padding:0 16px;gap:8px;margin-bottom:16px;overflow-x:auto}
+.stats-period-tab{padding:8px 16px;border-radius:20px;background:var(--card);border:1px solid var(--border);font-size:13px;color:var(--text-secondary);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.stats-period-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.stats-selector{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
+.stats-selector-btn{width:32px;height:32px;border-radius:50%;border:none;background:var(--card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+.stats-selector-text{font-size:16px;font-weight:600;font-family:'Noto Serif SC',serif;min-width:100px;text-align:center}
+.stats-summary-row{display:flex;gap:10px;padding:0 16px;margin-bottom:12px;flex-wrap:wrap}
+.stats-summary-card{flex:1;min-width:70px;background:var(--card);border-radius:var(--radius-md);padding:12px 8px;box-shadow:var(--shadow-sm);text-align:center}
+.stats-summary-card .label{font-size:11px;color:var(--text-tertiary);margin-bottom:2px}
+.stats-summary-card .value{font-size:15px;font-weight:700;font-family:'Noto Serif SC',serif}
+.stats-summary-card .value.expense{color:var(--expense)}.stats-summary-card .value.income{color:var(--income)}
+.stats-summary-card .value.balance{color:var(--primary)}.stats-summary-card .value.lend{color:var(--lend)}.stats-summary-card .value.borrow{color:var(--borrow)}
+
+.chart-container{background:var(--card);border-radius:var(--radius-md);padding:16px;margin:0 16px 16px;box-shadow:var(--shadow-sm)}
+.chart-title{font-size:14px;font-weight:600;margin-bottom:12px}
+.chart-box{width:100%;min-height:240px}
+
+.ranking-list{padding:0 16px}
+.ranking-item{display:flex;align-items:center;padding:12px;background:var(--card);border-radius:var(--radius-md);margin-bottom:6px;box-shadow:var(--shadow-sm)}
+.ranking-num{width:24px;height:24px;border-radius:50%;background:var(--primary-bg);color:var(--primary);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-right:10px;flex-shrink:0}
+.ranking-num.top1{background:#FFF3E0;color:#E65100}.ranking-num.top2{background:#ECEFF1;color:#546E7A}.ranking-num.top3{background:#FBE9E7;color:#BF360C}
+.ranking-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:10px;flex-shrink:0}
+.ranking-info{flex:1;min-width:0}
+.ranking-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ranking-bar-bg{height:4px;background:var(--border-light);border-radius:2px;margin-top:6px}
+.ranking-bar{height:100%;border-radius:2px}
+.ranking-amount{font-size:14px;font-weight:600;font-family:'Noto Serif SC',serif;flex-shrink:0;margin-left:10px}
+.ranking-percent{font-size:11px;color:var(--text-tertiary);margin-top:2px}
+
+/* Bills */
+.filter-bar{display:flex;align-items:center;gap:8px;padding:0 16px 12px;flex-wrap:wrap}
+.filter-search{flex:1;min-width:120px;position:relative}
+.filter-search input{width:100%;padding:10px 14px 10px 36px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--card);color:var(--text-primary);outline:none;font-family:inherit}
+.filter-search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-tertiary)}
+.filter-btn{padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--card);color:var(--text-secondary);font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.filter-btn.active{background:var(--primary-bg);color:var(--primary);border-color:var(--primary)}
+.month-selector{display:flex;align-items:center;justify-content:center;gap:12px;padding:4px 16px 12px}
+.month-selector button{width:28px;height:28px;border-radius:50%;border:none;background:var(--card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+.month-selector span{font-size:15px;font-weight:600;font-family:'Noto Serif SC',serif;min-width:90px;text-align:center}
+
+/* Settings */
+.settings-group{margin:0 16px 16px;background:var(--card);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm)}
+.settings-item{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border-light);cursor:pointer}
+.settings-item:last-child{border-bottom:none}
+.settings-item:active{background:var(--card-hover)}
+.settings-item-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0}
+.settings-item-content{flex:1}
+.settings-item-title{font-size:14px;font-weight:500}
+.settings-item-desc{font-size:12px;color:var(--text-tertiary);margin-top:2px}
+.settings-item-arrow{color:var(--text-tertiary);font-size:18px}
+.toggle-switch{position:relative;width:44px;height:24px;background:var(--border);border-radius:12px;cursor:pointer;flex-shrink:0}
+.toggle-switch.on{background:var(--primary)}
+.toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:transform 0.2s}
+.toggle-switch.on::after{transform:translateX(20px)}
+
+/* Loan Detail */
+.loan-detail-header{text-align:center;padding:10px 0 16px;border-bottom:1px solid var(--border-light);margin-bottom:16px}
+.loan-detail-person{font-size:20px;font-weight:700;font-family:'Noto Serif SC',serif;margin-bottom:4px}
+.loan-detail-meta{font-size:13px;color:var(--text-secondary)}
+.loan-detail-status{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500;margin-top:8px}
+.loan-detail-status.pending{background:var(--expense-bg);color:var(--expense)}
+.loan-detail-status.partial{background:var(--lend-bg);color:var(--lend)}
+.loan-detail-status.cleared{background:var(--income-bg);color:var(--income)}
+.loan-detail-status.dead{background:#F0F0F0;color:#999;text-decoration:line-through}
+.btn-dead{background:#F0F0F0;color:#999}
+.period-toggle{display:flex;background:rgba(255,255,255,0.15);border-radius:20px;padding:3px;margin-bottom:10px;position:relative;z-index:1}
+.period-toggle-btn{flex:1;padding:6px 0;border:none;background:transparent;border-radius:16px;font-size:12px;color:rgba(255,255,255,0.7);cursor:pointer;font-family:inherit}
+.period-toggle-btn.active{background:rgba(255,255,255,0.9);color:var(--primary);font-weight:600}
+.loan-amount-row{display:flex;gap:10px;margin-bottom:16px}
+.loan-amount-item{flex:1;text-align:center;background:var(--card);border-radius:var(--radius-md);padding:12px 8px;box-shadow:var(--shadow-sm)}
+.loan-amount-item .label{font-size:11px;color:var(--text-tertiary);margin-bottom:4px}
+.loan-amount-item .value{font-size:16px;font-weight:700;font-family:'Noto Serif SC',serif}
+.repay-history-title{font-size:14px;font-weight:600;margin-bottom:10px}
+.repay-history-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card);border-radius:var(--radius-sm);margin-bottom:6px;box-shadow:var(--shadow-sm)}
+.repay-history-date{font-size:13px;color:var(--text-secondary)}
+.repay-history-amount{font-size:14px;font-weight:600;font-family:'Noto Serif SC',serif;color:var(--income)}
+.repay-history-note{font-size:11px;color:var(--text-tertiary);margin-top:2px}
+.loan-detail-actions{display:flex;gap:10px;margin-top:16px}
+.loan-detail-actions button{flex:1;padding:12px;border-radius:var(--radius-md);border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-repay{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:#fff}
+.btn-edit{background:var(--card);color:var(--text-primary);border:1px solid var(--border)!important}
+.btn-delete{background:var(--expense-bg);color:var(--expense)}
+
+.wishlist-summary{margin:0 16px 12px;background:var(--card);border-radius:var(--radius-lg);padding:14px 16px;box-shadow:var(--shadow-sm);display:flex;gap:12px}
+.wishlist-summary-item{flex:1;text-align:center}
+.wishlist-summary-item .label{font-size:11px;color:var(--text-tertiary);margin-bottom:2px}
+.wishlist-summary-item .value{font-size:16px;font-weight:700;font-family:'Noto Serif SC',serif}
+.wishlist-tabs{display:flex;padding:0 16px 12px;gap:8px}
+.wishlist-tab{padding:8px 16px;border-radius:20px;background:var(--card);border:1px solid var(--border);font-size:13px;color:var(--text-secondary);cursor:pointer;font-family:inherit;white-space:nowrap}
+.wishlist-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.wishlist-add-btn{width:100%;padding:14px;border:none;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:var(--shadow-md);font-family:inherit}
+.wishlist-add-btn:active{transform:scale(0.98)}
+.wishlist-item{display:flex;align-items:center;padding:14px;background:var(--card);border-radius:var(--radius-md);margin-bottom:8px;box-shadow:var(--shadow-sm)}
+.wishlist-item:active{background:var(--card-hover)}
+.wishlist-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0}
+.wishlist-info{flex:1;min-width:0}
+.wishlist-name{font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px}
+.wishlist-priority{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:500;flex-shrink:0}
+.wishlist-priority.high{background:#FDEDEC;color:#E74C3C}
+.wishlist-priority.medium{background:#FEF5E7;color:#F39C12}
+.wishlist-priority.low{background:#EBF5FB;color:#3498DB}
+.wishlist-meta{font-size:12px;color:var(--text-tertiary);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wishlist-amount{font-size:16px;font-weight:600;font-family:'Noto Serif SC',serif;color:var(--expense);flex-shrink:0;margin-left:8px}
+.wishlist-amount.purchased{color:var(--text-tertiary);text-decoration:line-through}
+.wishlist-actions{display:flex;gap:6px;margin-left:8px;flex-shrink:0}
+.wishlist-action-btn{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
+.wishlist-action-btn.buy{background:var(--income-bg);color:var(--income)}
+.wishlist-action-btn.edit{background:var(--primary-bg);color:var(--primary)}
+.wishlist-action-btn.cancel{background:var(--expense-bg);color:var(--expense)}
+.wishlist-cat-summary{margin:0 16px 12px;background:var(--card);border-radius:var(--radius-md);padding:14px 16px;box-shadow:var(--shadow-sm)}
+.wishlist-cat-title{font-size:13px;font-weight:600;margin-bottom:10px}
+.wishlist-cat-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.wishlist-cat-row:last-child{margin-bottom:0}
+.wishlist-cat-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wishlist-cat-name{font-size:12px;color:var(--text-secondary);width:56px;flex-shrink:0}
+.wishlist-cat-bar{flex:1;height:6px;background:var(--border-light);border-radius:3px;overflow:hidden}
+.wishlist-cat-fill{height:100%;border-radius:3px}
+.wishlist-cat-amount{font-size:11px;color:var(--text-tertiary);width:60px;text-align:right;flex-shrink:0}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#fff;padding:12px 24px;border-radius:var(--radius-md);font-size:14px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;max-width:80%;text-align:center}
+.toast.show{opacity:1}
+::-webkit-scrollbar{width:0;height:0}
+@media(min-width:641px){#app{border-left:1px solid var(--border);border-right:1px solid var(--border);box-shadow:var(--shadow-lg)}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Home -->
+  <section class="view active" id="view-home">
+    <div class="app-header">
+      <div class="app-title">记账本</div>
+      <button class="header-btn" onclick="showInstallBanner()" title="安装到手机">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+    </div>
+    <div class="summary-card">
+      <div class="period-toggle">
+        <button class="period-toggle-btn" id="period-week" onclick="setHomePeriod('week')">本周</button>
+        <button class="period-toggle-btn active" id="period-month" onclick="setHomePeriod('month')">本月</button>
+        <button class="period-toggle-btn" id="period-year" onclick="setHomePeriod('year')">本年</button>
+      </div>
+      <div class="summary-label" id="home-period-label">本月结余</div>
+      <div class="summary-balance"><span class="currency">&yen;</span><span id="home-balance">0.00</span></div>
+      <div class="summary-row">
+        <div class="summary-item"><div class="summary-item-label">收入</div><div class="summary-item-value" id="home-income">0.00</div></div>
+        <div class="summary-item"><div class="summary-item-label">支出</div><div class="summary-item-value" id="home-expense">0.00</div></div>
+      </div>
+      <div class="summary-loan-row">
+        <div class="summary-loan-item"><div class="label">本月借出</div><div class="value" id="home-lend">0.00</div></div>
+        <div class="summary-loan-item"><div class="label">本月借入</div><div class="value" id="home-borrow">0.00</div></div>
+        <div class="summary-loan-item"><div class="label">待收回</div><div class="value" id="home-pending-lend">0.00</div></div>
+        <div class="summary-loan-item"><div class="label">待归还</div><div class="value" id="home-pending-borrow">0.00</div></div>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <button class="quick-action" onclick="openAddModal('expense')">
+        <div class="quick-action-icon" style="background:var(--expense-bg);color:var(--expense)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        </div>
+        <div class="quick-action-label">记支出</div>
+      </button>
+      <button class="quick-action" onclick="openAddModal('income')">
+        <div class="quick-action-icon" style="background:var(--income-bg);color:var(--income)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        </div>
+        <div class="quick-action-label">记收入</div>
+      </button>
+      <button class="quick-action" onclick="openAddModal('loan')">
+        <div class="quick-action-icon" style="background:var(--lend-bg);color:var(--lend)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </div>
+        <div class="quick-action-label">记借款</div>
+      </button>
+      <button class="quick-action" onclick="switchView('wishlist')">
+        <div class="quick-action-icon" style="background:#E8F5E9;color:#2E7D32">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </div>
+        <div class="quick-action-label">待购清单</div>
+      </button>
+    </div>
+    <div class="pending-repay-section" id="pending-repay-section" style="display:none">
+      <div class="section-title" style="padding:0 0 10px"><span>待还款</span></div>
+      <div class="pending-repay-list" id="pending-repay-list"></div>
+    </div>
+    <div class="section-title"><span>最近记录</span><span class="more" onclick="switchView('bills')">查看全部</span></div>
+    <div class="recent-list" id="home-recent-list"></div>
+  </section>
+
+  <!-- Bills -->
+  <section class="view" id="view-bills">
+    <div class="app-header"><div class="app-title">账单</div></div>
+    <div class="month-selector">
+      <button onclick="changeBillsMonth(-1)">&#8249;</button>
+      <span id="bills-month-label">2026年9月</span>
+      <button onclick="changeBillsMonth(1)">&#8250;</button>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="bills-search" placeholder="搜索备注/姓名..." oninput="renderBills()">
+      </div>
+      <button class="filter-btn active" id="filter-all" onclick="setBillsFilter('all')">全部</button>
+      <button class="filter-btn" id="filter-expense" onclick="setBillsFilter('expense')">支出</button>
+      <button class="filter-btn" id="filter-income" onclick="setBillsFilter('income')">收入</button>
+      <button class="filter-btn" id="filter-loan" onclick="setBillsFilter('loan')">借款</button>
+    </div>
+    <div id="bills-list" style="padding:0 16px;"></div>
+  </section>
+
+  <!-- Stats -->
+  <section class="view" id="view-stats">
+    <div class="app-header"><div class="app-title">统计</div></div>
+    <div class="stats-period-tabs">
+      <button class="stats-period-tab active" onclick="setStatsPeriod('month')">月度</button>
+      <button class="stats-period-tab" onclick="setStatsPeriod('halfyear')">上下半年</button>
+      <button class="stats-period-tab" onclick="setStatsPeriod('year')">年度</button>
+    </div>
+    <div class="stats-selector">
+      <button class="stats-selector-btn" onclick="changeStatsPeriod(-1)">&#8249;</button>
+      <span class="stats-selector-text" id="stats-period-text">2026年9月</span>
+      <button class="stats-selector-btn" onclick="changeStatsPeriod(1)">&#8250;</button>
+    </div>
+    <div id="stats-content"></div>
+  </section>
+
+  <!-- Settings -->
+  <section class="view" id="view-settings">
+    <div class="app-header"><div class="app-title">我的</div></div>
+    <div class="settings-group">
+      <div class="settings-item" onclick="toggleTheme()">
+        <div class="settings-item-icon" style="background:#FFF3E0;color:#E65100">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </div>
+        <div class="settings-item-content"><div class="settings-item-title">深色模式</div><div class="settings-item-desc">切换浅色/深色主题</div></div>
+        <div class="toggle-switch" id="theme-toggle"></div>
+      </div>
+      <div class="settings-item" onclick="showInstallBanner()">
+        <div class="settings-item-icon" style="background:#EDF2EF;color:#1B4332">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div class="settings-item-content"><div class="settings-item-title">安装到手机</div><div class="settings-item-desc">添加到主屏幕，像 App 一样使用</div></div>
+        <div class="settings-item-arrow">&#8250;</div>
+      </div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-item" onclick="exportCSV()">
+        <div class="settings-item-icon" style="background:#EEF4F8;color:#4A7FA5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div class="settings-item-content"><div class="settings-item-title">导出数据</div><div class="settings-item-desc">导出全部账单为 CSV 文件</div></div>
+        <div class="settings-item-arrow">&#8250;</div>
+      </div>
+      <div class="settings-item" onclick="document.getElementById('import-file').click()">
+        <div class="settings-item-icon" style="background:#EDF5F3;color:#3D8B7E">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="settings-item-content"><div class="settings-item-title">导入数据</div><div class="settings-item-desc">从 CSV 文件导入账单</div></div>
+        <div class="settings-item-arrow">&#8250;</div>
+      </div>
+      <input type="file" id="import-file" accept=".csv" style="display:none" onchange="importCSV(event)">
+    </div>
+    <div class="settings-group">
+      <div class="settings-item" onclick="showCategoryManage()">
+        <div class="settings-item-icon" style="background:#F3E8FF;color:#7C3AED">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </div>
+        <div class="settings-item-content"><div class="settings-item-title">分类管理</div><div class="settings-item-desc">查看收支和借款分类</div></div>
+        <div class="settings-item-arrow">&#8250;</div>
+      </div>
+      <div class="settings-item" onclick="clearAllData()">
+        <div class="settings-item-icon" style="background:#FDF0EE;color:#C44536">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+        <div class="settings-item-content"><div class="settings-item-title">清空所有数据</div><div class="settings-item-desc">删除全部记录（不可恢复）</div></div>
+        <div class="settings-item-arrow">&#8250;</div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:12px;">记账本 v5.0 &middot; 数据存储于本地</div>
+  </section>
+
+  <!-- Wishlist -->
+  <section class="view" id="view-wishlist">
+    <div class="app-header">
+      <button class="header-btn" onclick="switchView('home')" title="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      </button>
+      <div class="app-title" style="flex:1;text-align:center">待购清单</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="wishlist-summary">
+      <div class="wishlist-summary-item"><div class="label">待购件数</div><div class="value" id="wishlist-pending-count" style="color:var(--primary)">0</div></div>
+      <div class="wishlist-summary-item"><div class="label">待购金额</div><div class="value" id="wishlist-pending-amount" style="color:var(--expense)">0.00</div></div>
+      <div class="wishlist-summary-item"><div class="label">已购买</div><div class="value" id="wishlist-purchased-amount" style="color:var(--income)">0.00</div></div>
+    </div>
+    <div class="wishlist-tabs">
+      <button class="wishlist-tab active" id="wishlist-tab-all" onclick="setWishlistFilter('all')">全部</button>
+      <button class="wishlist-tab" id="wishlist-tab-pending" onclick="setWishlistFilter('pending')">待购买</button>
+      <button class="wishlist-tab" id="wishlist-tab-purchased" onclick="setWishlistFilter('purchased')">已购买</button>
+      <button class="wishlist-tab" id="wishlist-tab-cancelled" onclick="setWishlistFilter('cancelled')">已取消</button>
+    </div>
+    <div class="wishlist-cat-summary" id="wishlist-cat-summary" style="display:none"></div>
+    <div id="wishlist-list" style="padding:0 16px;"></div>
+    <div style="padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));">
+      <button class="wishlist-add-btn" onclick="openWishlistAdd()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        添加待购事项
+      </button>
+    </div>
+  </section>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="switchView('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>首页</span>
+  </button>
+  <button class="nav-item" onclick="switchView('bills')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span>账单</span>
+  </button>
+  <button class="nav-item" onclick="switchView('stats')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span>统计</span>
+  </button>
+  <button class="nav-item" onclick="switchView('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>我的</span>
+  </button>
+</nav>
+
+<button class="fab" onclick="openAddModal()" title="记一笔">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- Add Modal -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="add-modal-title">记一笔</div>
+      <button class="modal-close" onclick="closeAddModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="type-toggle">
+        <button class="type-toggle-btn active expense-type" id="type-expense" onclick="setTxType('expense')">支出</button>
+        <button class="type-toggle-btn income-type" id="type-income" onclick="setTxType('income')">收入</button>
+        <button class="type-toggle-btn loan-type" id="type-loan" onclick="setTxType('loan')">借款</button>
+      </div>
+      <div class="loan-direction-toggle" id="loan-direction-section" style="display:none">
+        <button class="loan-direction-btn active lend-dir" id="dir-lend" onclick="setLoanDir('lend')">借出</button>
+        <button class="loan-direction-btn borrow-dir" id="dir-borrow" onclick="setLoanDir('borrow')">借入</button>
+      </div>
+      <div class="payment-toggle" id="payment-section" style="display:none">
+        <button class="payment-btn active normal-pay" id="pay-normal" onclick="setPaymentMethod('normal')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          普通支付
+        </button>
+        <button class="payment-btn huabei-pay" id="pay-huabei" onclick="setPaymentMethod('huabei')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          花呗支付
+        </button>
+      </div>
+      <div class="huabei-hint" id="huabei-hint" style="display:none">使用花呗支付将同时生成一笔等额的花呗借入记录</div>
+      <div class="amount-section">
+        <span class="amount-currency">&yen;</span>
+        <input type="text" class="amount-display" id="tx-amount" placeholder="0.00" inputmode="decimal" oninput="formatAmount(this)">
+      </div>
+      <div class="category-grid" id="tx-category-grid"></div>
+      <div class="subcategory-section" id="tx-subcategory-section" style="display:none">
+        <div class="subcategory-label">子分类（可选）</div>
+        <div class="subcategory-chips" id="tx-subcategory-chips"></div>
+      </div>
+      <div class="form-group" id="tx-person-section" style="display:none">
+        <label class="form-label">对方姓名 <span style="color:var(--expense)">*</span></label>
+        <input type="text" class="form-input" id="tx-person" placeholder="请输入对方姓名" maxlength="20">
+      </div>
+      <div class="form-row" id="tx-date-row">
+        <div class="form-group">
+          <label class="form-label">日期</label>
+          <input type="date" class="form-input" id="tx-date">
+        </div>
+        <div class="form-group" id="tx-duedate-section" style="display:none">
+          <label class="form-label">预计还款日（可选）</label>
+          <input type="date" class="form-input" id="tx-duedate">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <input type="text" class="form-input" id="tx-note" placeholder="添加备注..." maxlength="50">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="submit-btn" style="flex:1" onclick="saveTransaction()">保存</button>
+        <button class="submit-btn" id="tx-delete-btn" style="flex:0 0 80px;background:var(--expense-bg);color:var(--expense);display:none" onclick="deleteTransaction()">删除</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loan Detail Modal -->
+<div class="modal-overlay" id="loan-detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">借款详情</div>
+      <button class="modal-close" onclick="closeLoanDetail()">&times;</button>
+    </div>
+    <div class="modal-body" id="loan-detail-body"></div>
+  </div>
+</div>
+
+<!-- Repay Modal -->
+<div class="modal-overlay" id="repay-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">记录还款</div>
+      <button class="modal-close" onclick="closeRepayModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">还款金额</label>
+        <input type="text" class="form-input" id="repay-amount" placeholder="0.00" inputmode="decimal" oninput="formatAmount(this)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">还款日期</label>
+        <input type="date" class="form-input" id="repay-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <input type="text" class="form-input" id="repay-note" placeholder="添加备注..." maxlength="50">
+      </div>
+      <button class="submit-btn" onclick="submitRepay()">确认还款</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-overlay" id="category-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">分类管理</div><button class="modal-close" onclick="closeCategoryModal()">&times;</button></div>
+    <div class="modal-body" id="category-modal-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="wishlist-add-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="wishlist-add-title">添加待购</div><button class="modal-close" onclick="closeWishlistAdd()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">物品名称 <span style="color:var(--expense)">*</span></label>
+        <input type="text" class="form-input" id="wishlist-name" placeholder="例如：新手机、房租、聚餐" maxlength="30">
+      </div>
+      <div class="form-group">
+        <label class="form-label">预估金额 <span style="color:var(--expense)">*</span></label>
+        <input type="text" class="form-input" id="wishlist-amount" placeholder="0.00" inputmode="decimal" oninput="formatAmount(this)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">分类</label>
+        <div class="category-grid" id="wishlist-category-grid"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">优先级</label>
+        <div class="subcategory-chips">
+          <div class="subcategory-chip selected" id="wishlist-priority-high" onclick="setWishlistPriority('high')">高</div>
+          <div class="subcategory-chip" id="wishlist-priority-medium" onclick="setWishlistPriority('medium')">中</div>
+          <div class="subcategory-chip" id="wishlist-priority-low" onclick="setWishlistPriority('low')">低</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">计划购买日期（可选）</label>
+        <input type="date" class="form-input" id="wishlist-plan-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <input type="text" class="form-input" id="wishlist-note" placeholder="添加备注..." maxlength="50">
+      </div>
+      <button class="submit-btn" onclick="saveWishlist()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="wishlist-buy-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">确认购买</div><button class="modal-close" onclick="closeWishlistBuy()">&times;</button></div>
+    <div class="modal-body">
+      <div style="padding:12px;background:var(--card);border-radius:var(--radius-md);margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:600;" id="wishlist-buy-name"></div>
+        <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;" id="wishlist-buy-cat"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">实际金额</label>
+        <input type="text" class="form-input" id="wishlist-buy-amount" placeholder="0.00" inputmode="decimal" oninput="formatAmount(this)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">购买日期</label>
+        <input type="date" class="form-input" id="wishlist-buy-date">
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:16px;">确认后将自动生成一笔对应分类的支出记录</div>
+      <button class="submit-btn" onclick="confirmWishlistBuy()">确认购买并记账</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Categories =====
+var CATEGORIES = {
+  expense: [
+    {id:'food',name:'餐饮',color:'#E07A5F',bg:'#FDF0EE',icon:'food',sub:['早餐','午餐','晚餐','零食饮料','外卖','聚餐']},
+    {id:'entertainment',name:'手机娱乐',color:'#8E7DBE',bg:'#F3EFFF',icon:'phone',sub:['游戏充值','视频会员','音乐会员','小说漫画','直播打赏','其他订阅']},
+    {id:'daily',name:'日常消费',color:'#3D8B7E',bg:'#EDF5F3',icon:'cart',sub:['日用品','洗护','服饰鞋包','家居','美妆个护','文具']},
+    {id:'transport',name:'交通',color:'#4A7FA5',bg:'#EEF4F8',icon:'car',sub:['公交地铁','打车网约车','共享单车','火车机票','加油停车']},
+    {id:'other',name:'其他',color:'#A0A0A0',bg:'#F5F5F5',icon:'more',sub:['医疗','教育','人情往来','宠物','数码产品','杂项']}
+  ],
+  income: [
+    {id:'salary',name:'工资',color:'#2D6A4F',bg:'#EDF5F0',icon:'wallet',sub:['月薪','兼职','劳务']},
+    {id:'redpacket',name:'红包转账',color:'#D4A574',bg:'#FBF5EE',icon:'gift',sub:['微信支付宝红包','朋友转账']},
+    {id:'investment',name:'理财收益',color:'#4A7FA5',bg:'#EEF4F8',icon:'trend',sub:['利息','基金股票收益']},
+    {id:'living',name:'生活费',color:'#27AE60',bg:'#E8F8F0',icon:'heart',sub:['父母生活费','生活补贴','助学金']},
+    {id:'other_income',name:'其他收入',color:'#A0A0A0',bg:'#F5F5F5',icon:'more',sub:['二手出售','退款']}
+  ],
+  lend: [
+    {id:'friend_l',name:'朋友',color:'#E67E22',bg:'#FDF3E7',icon:'user'},
+    {id:'family_l',name:'家人',color:'#E74C3C',bg:'#FDEDEC',icon:'home'},
+    {id:'colleague_l',name:'同事',color:'#3498DB',bg:'#EBF5FB',icon:'briefcase'},
+    {id:'other_l',name:'其他',color:'#95A5A6',bg:'#F4F6F6',icon:'more'}
+  ],
+  borrow: [
+    {id:'friend_b',name:'朋友',color:'#E67E22',bg:'#FDF3E7',icon:'user'},
+    {id:'family_b',name:'家人',color:'#E74C3C',bg:'#FDEDEC',icon:'home'},
+    {id:'colleague_b',name:'同事',color:'#3498DB',bg:'#EBF5FB',icon:'briefcase'},
+    {id:'credit',name:'信用卡/花呗',color:'#9B59B6',bg:'#F4ECF7',icon:'card'},
+    {id:'other_b',name:'其他',color:'#95A5A6',bg:'#F4F6F6',icon:'more'}
+  ]
+};
+
+var ICONS = {
+  food:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>',
+  phone:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+  cart:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
+  car:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+  more:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
+  wallet:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>',
+  gift:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>',
+  trend:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+  heart:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  user:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  home:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  briefcase:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+  card:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>'
+};
+
+// ===== IndexedDB =====
+var db = null;
+function openDB() {
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open('ledger-app-db-v3', 3);
+    req.onupgradeneeded = function(e) {
+      var d = e.target.result;
+      if (!d.objectStoreNames.contains('transactions')) {
+        var s = d.createObjectStore('transactions', {keyPath:'id', autoIncrement:true});
+        s.createIndex('date','date',{unique:false});
+        s.createIndex('type','type',{unique:false});
+      }
+      if (d.objectStoreNames.contains('budgets')) { d.deleteObjectStore('budgets'); }
+      if (!d.objectStoreNames.contains('wishlists')) {
+        d.createObjectStore('wishlists', {keyPath:'id', autoIncrement:true});
+      }
+    };
+    req.onsuccess = function(e) { db = e.target.result; resolve(db); };
+    req.onerror = function(e) { reject(e.target.error); };
+  });
+}
+function dbAdd(tx) { return new Promise(function(res,rej){var t=db.transaction('transactions','readwrite').objectStore('transactions').add(tx);t.onsuccess=function(){res(t.result)};t.onerror=function(){rej(t.error)}}); }
+function dbPut(tx) { return new Promise(function(res,rej){var t=db.transaction('transactions','readwrite').objectStore('transactions').put(tx);t.onsuccess=function(){res(t.result)};t.onerror=function(){rej(t.error)}}); }
+function dbDelete(id) { return new Promise(function(res,rej){var t=db.transaction('transactions','readwrite').objectStore('transactions').delete(id);t.onsuccess=function(){res()};t.onerror=function(){rej(t.error)}}); }
+function dbGetAll() { return new Promise(function(res,rej){var t=db.transaction('transactions','readonly').objectStore('transactions').getAll();t.onsuccess=function(){res(t.result||[])};t.onerror=function(){rej(t.error)}}); }
+function dbClear() { return new Promise(function(res,rej){var t=db.transaction('transactions','readwrite').objectStore('transactions').clear();t.onsuccess=function(){res()};t.onerror=function(){rej(t.error)}}); }
+function dbWishAdd(item) { return new Promise(function(res,rej){var t=db.transaction('wishlists','readwrite').objectStore('wishlists').add(item);t.onsuccess=function(){res(t.result)};t.onerror=function(){rej(t.error)}}); }
+function dbWishPut(item) { return new Promise(function(res,rej){var t=db.transaction('wishlists','readwrite').objectStore('wishlists').put(item);t.onsuccess=function(){res()};t.onerror=function(){rej(t.error)}}); }
+function dbWishDelete(id) { return new Promise(function(res,rej){var t=db.transaction('wishlists','readwrite').objectStore('wishlists').delete(id);t.onsuccess=function(){res()};t.onerror=function(){rej(t.error)}}); }
+function dbWishGetAll() { return new Promise(function(res,rej){var t=db.transaction('wishlists','readonly').objectStore('wishlists').getAll();t.onsuccess=function(){res(t.result||[])};t.onerror=function(){rej(t.error)}}); }
+
+// ===== State =====
+var state = {currentView:'home',txType:'expense',loanDir:'lend',txCategory:null,txSubcategory:null,txPaymentMethod:'normal',editingId:null,billsMonth:new Date(),billsFilter:'all',statsPeriod:'month',statsDate:new Date(),theme:'light',allTx:[],currentLoanId:null,currentLoanPerson:null,currentLoanType:null,homePeriod:'month',wishlist:[],wishlistFilter:'all',wishlistEditingId:null,wishlistCategory:null,wishlistPriority:'medium',wishlistBuyId:null};
+
+// ===== Utils =====
+function fmt(n) { return Number(n).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function todayStr() { var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function getCategory(type,id) { return CATEGORIES[type] ? CATEGORIES[type].find(function(c){return c.id===id}) : null; }
+function showToast(msg,dur) { dur=dur||2000; var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){t.classList.remove('show')},dur); }
+function formatAmount(input) { var v=input.value.replace(/[^\d.]/g,''); var p=v.split('.'); if(p.length>2)v=p[0]+'.'+p.slice(1).join(''); if(p[1]&&p[1].length>2)v=p[0]+'.'+p[1].slice(0,2); input.value=v; }
+
+// 判断记录类型是否属于支出/收入/借款
+function isExpense(type) { return type==='expense' || type==='repay_borrow'; }
+function isIncome(type) { return type==='income' || type==='repay_lend'; }
+function isLoan(type) { return type==='lend' || type==='borrow'; }
+
+// ===== Safe Area =====
+function fixSafeArea() {
+  var isStandalone = ('standalone' in navigator && navigator.standalone === true) ||
+                     (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                     (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches);
+  if (!isStandalone) return;
+  var longSide = Math.max(screen.height, screen.width);
+  var statusBarHeight = longSide >= 812 ? 50 : 20;
+  var app = document.getElementById('app');
+  if (app) app.style.paddingTop = statusBarHeight + 'px';
+}
+
+// ===== Navigation =====
+function switchView(view) {
+  state.currentView = view;
+  var views = document.querySelectorAll('.view');
+  for (var i=0;i<views.length;i++) views[i].classList.remove('active');
+  document.getElementById('view-'+view).classList.add('active');
+  var navs = document.querySelectorAll('.nav-item');
+  var names = ['home','bills','stats','settings'];
+  for (var j=0;j<navs.length;j++) navs[j].classList.toggle('active', names[j]===view);
+  // 待购清单页面隐藏右下角fab按钮
+  document.querySelector('.fab').style.display = view==='wishlist' ? 'none' : 'flex';
+  if (view==='home') renderHome();
+  if (view==='bills') renderBills();
+  if (view==='stats') renderStats();
+  if (view==='wishlist') renderWishlist();
+}
+
+// ===== Add/Edit Modal =====
+function openAddModal(type) {
+  state.editingId = null;
+  state.txType = type || 'expense';
+  state.loanDir = 'lend';
+  state.txCategory = null;
+  state.txSubcategory = null;
+  state.txPaymentMethod = 'normal';
+  state.editingId = null;
+  document.getElementById('add-modal-title').textContent = '记一笔';
+  document.getElementById('tx-amount').value = '';
+  document.getElementById('tx-note').value = '';
+  document.getElementById('tx-person').value = '';
+  document.getElementById('tx-date').value = todayStr();
+  document.getElementById('tx-duedate').value = '';
+  document.getElementById('tx-delete-btn').style.display = 'none';
+  setPaymentMethod('normal');
+  setTxType(state.txType);
+  document.getElementById('add-modal').classList.add('show');
+}
+function closeAddModal() { document.getElementById('add-modal').classList.remove('show'); }
+
+function setTxType(type) {
+  state.txType = type;
+  state.txCategory = null;
+  state.txSubcategory = null;
+  document.getElementById('type-expense').classList.toggle('active', type==='expense');
+  document.getElementById('type-income').classList.toggle('active', type==='income');
+  document.getElementById('type-loan').classList.toggle('active', type==='loan');
+  // 显示/隐藏借款方向切换
+  document.getElementById('loan-direction-section').style.display = type==='loan' ? 'flex' : 'none';
+  // 显示/隐藏对方姓名
+  document.getElementById('tx-person-section').style.display = type==='loan' ? 'block' : 'none';
+  // 显示/隐藏预计还款日期
+  document.getElementById('tx-duedate-section').style.display = type==='loan' ? 'block' : 'none';
+  // 显示/隐藏支付方式（仅支出）
+  document.getElementById('payment-section').style.display = type==='expense' ? 'flex' : 'none';
+  document.getElementById('huabei-hint').style.display = (type==='expense' && state.txPaymentMethod==='huabei') ? 'block' : 'none';
+  renderCategoryGrid();
+}
+
+function setPaymentMethod(method) {
+  state.txPaymentMethod = method;
+  document.getElementById('pay-normal').classList.toggle('active', method==='normal');
+  document.getElementById('pay-huabei').classList.toggle('active', method==='huabei');
+  document.getElementById('huabei-hint').style.display = method==='huabei' ? 'block' : 'none';
+}
+
+function setLoanDir(dir) {
+  state.loanDir = dir;
+  state.txCategory = null;
+  state.txSubcategory = null;
+  document.getElementById('dir-lend').classList.toggle('active', dir==='lend');
+  document.getElementById('dir-borrow').classList.toggle('active', dir==='borrow');
+  renderCategoryGrid();
+}
+
+function renderCategoryGrid() {
+  var grid = document.getElementById('tx-category-grid');
+  var catType = state.txType === 'loan' ? state.loanDir : state.txType;
+  var cats = CATEGORIES[catType] || [];
+  var html = '';
+  for (var i=0;i<cats.length;i++) {
+    var c = cats[i];
+    html += '<div class="category-item '+(state.txCategory===c.id?'selected':'')+'" onclick="selectCategory(\''+c.id+'\')">'+
+      '<div class="category-item-icon" style="background:'+c.bg+';color:'+c.color+';">'+(ICONS[c.icon]||ICONS.more)+'</div>'+
+      '<div class="category-item-name">'+c.name+'</div></div>';
+  }
+  grid.innerHTML = html;
+  renderSubcategories();
+}
+
+function selectCategory(id) { state.txCategory=id; state.txSubcategory=null; renderCategoryGrid(); }
+
+function renderSubcategories() {
+  var section = document.getElementById('tx-subcategory-section');
+  var chips = document.getElementById('tx-subcategory-chips');
+  if (!state.txCategory || state.txType === 'loan') { section.style.display='none'; return; }
+  var cat = getCategory(state.txType, state.txCategory);
+  if (!cat || !cat.sub || cat.sub.length===0) { section.style.display='none'; return; }
+  section.style.display='block';
+  var html='';
+  for (var i=0;i<cat.sub.length;i++) {
+    var s=cat.sub[i];
+    html+='<div class="subcategory-chip '+(state.txSubcategory===s?'selected':'')+'" onclick="selectSubcategory(\''+s+'\')">'+s+'</div>';
+  }
+  chips.innerHTML=html;
+}
+function selectSubcategory(name) { state.txSubcategory = state.txSubcategory===name?null:name; renderSubcategories(); }
+
+async function saveTransaction() {
+  var amount = parseFloat(document.getElementById('tx-amount').value);
+  if (!amount || amount<=0) { showToast('请输入有效金额'); return; }
+  if (!state.txCategory) { showToast('请选择分类'); return; }
+
+  var tx = {
+    type: state.txType === 'loan' ? state.loanDir : state.txType,
+    category: state.txCategory,
+    subcategory: state.txSubcategory,
+    amount: amount,
+    note: document.getElementById('tx-note').value.trim(),
+    date: document.getElementById('tx-date').value || todayStr(),
+    createdAt: Date.now()
+  };
+
+  if (state.txType === 'expense') {
+    tx.paymentMethod = state.txPaymentMethod;
+  }
+
+  if (state.txType === 'loan') {
+    var person = document.getElementById('tx-person').value.trim();
+    if (!person) { showToast('请输入对方姓名'); return; }
+    tx.person = person;
+    tx.dueDate = document.getElementById('tx-duedate').value || '';
+    tx.repaidAmount = 0;
+    tx.status = 'pending';
+  }
+
+  try {
+    if (state.editingId) {
+      tx.id = state.editingId;
+      var old = state.allTx.find(function(t){return t.id===state.editingId;});
+      if (old) {
+        tx.createdAt = old.createdAt;
+        tx.huabeiLoanId = old.huabeiLoanId;
+      }
+      await dbPut(tx);
+      // 处理花呗关联的借入记录
+      if (state.txType === 'expense') {
+        var wasHuabei = old && old.paymentMethod === 'huabei';
+        var isHuabei = state.txPaymentMethod === 'huabei';
+        if (wasHuabei && isHuabei && tx.huabeiLoanId) {
+          // 更新对应的借入记录
+          var loan = state.allTx.find(function(t){return t.id===tx.huabeiLoanId;});
+          if (loan) {
+            loan.amount = amount;
+            loan.date = tx.date;
+            loan.note = '花呗消费 · ' + (getCategory('expense', tx.category)?.name || '') + (tx.note ? ' · ' + tx.note : '');
+            await dbPut(loan);
+          }
+        } else if (wasHuabei && !isHuabei && tx.huabeiLoanId) {
+          // 删除对应的借入记录
+          await dbDelete(tx.huabeiLoanId);
+          tx.huabeiLoanId = null;
+          await dbPut(tx);
+        } else if (!wasHuabei && isHuabei) {
+          // 新增借入记录
+          var huabeiLoan = {
+            type: 'borrow',
+            category: 'credit',
+            amount: amount,
+            note: '花呗消费 · ' + (getCategory('expense', tx.category)?.name || '') + (tx.note ? ' · ' + tx.note : ''),
+            date: tx.date,
+            person: '花呗',
+            dueDate: '',
+            repaidAmount: 0,
+            status: 'pending',
+            linkedExpenseId: tx.id,
+            createdAt: Date.now()
+          };
+          var loanId = await dbAdd(huabeiLoan);
+          tx.huabeiLoanId = loanId;
+          await dbPut(tx);
+        }
+      }
+      showToast('已更新');
+    } else {
+      var newId = await dbAdd(tx);
+      // 花呗支付：同时生成借入记录
+      if (state.txType === 'expense' && state.txPaymentMethod === 'huabei') {
+        var huabeiLoan = {
+          type: 'borrow',
+          category: 'credit',
+          amount: amount,
+          note: '花呗消费 · ' + (getCategory('expense', tx.category)?.name || '') + (tx.note ? ' · ' + tx.note : ''),
+          date: tx.date,
+          person: '花呗',
+          dueDate: '',
+          repaidAmount: 0,
+          status: 'pending',
+          linkedExpenseId: newId,
+          createdAt: Date.now()
+        };
+        var loanId = await dbAdd(huabeiLoan);
+        tx.id = newId;
+        tx.huabeiLoanId = loanId;
+        await dbPut(tx);
+      }
+      showToast('已保存');
+    }
+    closeAddModal();
+    await loadAll();
+    if (state.currentView==='home') renderHome();
+    if (state.currentView==='bills') renderBills();
+    if (state.currentView==='stats') renderStats();
+  } catch(e) { showToast('保存失败: '+e.message); }
+}
+
+// ===== Loan Detail & Repay =====
+function openLoanDetail(loanId) {
+  state.currentLoanId = loanId;
+  var loan = state.allTx.find(function(t){return t.id===loanId});
+  if (!loan) return;
+  state.currentLoanPerson = loan.person;
+  state.currentLoanType = loan.type;
+  var body = document.getElementById('loan-detail-body');
+  var typeLabel = loan.type === 'lend' ? '借出给' : '借入自';
+  var typeColor = loan.type === 'lend' ? 'var(--lend)' : 'var(--borrow)';
+
+  // 查找同姓名同类型的所有借款记录（按日期升序）
+  var allLoans = state.allTx.filter(function(t){
+    return (t.type==='lend' || t.type==='borrow') && t.type===loan.type && t.person===loan.person;
+  }).sort(function(a,b){return a.date.localeCompare(b.date);});
+
+  // 计算汇总
+  var totalAmount = 0, totalRepaid = 0, activeCount = 0;
+  for (var i=0;i<allLoans.length;i++) {
+    totalAmount += allLoans[i].amount;
+    totalRepaid += (allLoans[i].repaidAmount || 0);
+    if (allLoans[i].status !== 'cleared' && allLoans[i].status !== 'dead') activeCount++;
+  }
+  var totalRemaining = totalAmount - totalRepaid;
+
+  // 操作按钮（汇总级别）
+  var actionsHtml = '';
+  if (activeCount > 0) {
+    actionsHtml += '<button class="btn-repay" onclick="openRepayModal()">记录还款</button>';
+  }
+
+  // 各笔明细
+  var detailHtml = '';
+  for (var j=0;j<allLoans.length;j++) {
+    var l = allLoans[j];
+    var cat = getCategory(l.type, l.category);
+    var rem = l.amount - (l.repaidAmount || 0);
+    var stText = l.status==='cleared' ? '已还清' : (l.status==='partial' ? '部分已还' : (l.status==='dead' ? '死账' : '未还'));
+    var stClass = l.status;
+    var itemActions = '';
+    if (l.status !== 'cleared' && l.status !== 'dead') {
+      if (l.type === 'lend') {
+        itemActions += '<button class="btn-dead" style="padding:4px 8px;font-size:11px" onclick="markAsDead('+l.id+')">死账</button>';
+      }
+    }
+    if (l.status === 'dead') {
+      itemActions += '<button class="btn-edit" style="padding:4px 8px;font-size:11px" onclick="restoreFromDead('+l.id+')">恢复</button>';
+    }
+    itemActions += '<button class="btn-delete" style="padding:4px 8px;font-size:11px" onclick="deleteLoan('+l.id+')">删除</button>';
+
+    detailHtml += '<div class="loan-group-detail-item">'+
+      '<div class="loan-group-detail-icon" style="background:'+(cat?cat.bg:'#f5f5f5')+';color:'+(cat?cat.color:'#999')+';">'+(cat?(ICONS[cat.icon]||ICONS.more):ICONS.more)+'</div>'+
+      '<div class="loan-group-detail-info">'+
+        '<div class="loan-group-detail-name">'+l.date+' · '+(cat?cat.name:'')+' <span class="tx-tag '+stClass+'" style="font-size:10px;padding:1px 5px">'+stText+'</span></div>'+
+        '<div class="loan-group-detail-meta">原始 '+fmt(l.amount)+' · 已还 '+fmt(l.repaidAmount||0)+' · 待还 '+fmt(rem)+(l.note?' · '+l.note:'')+(l.dueDate?' · 还款日 '+l.dueDate:'')+'</div>'+
+      '</div>'+
+      '<div class="loan-group-detail-amount" style="color:'+typeColor+'">'+itemActions+'</div>'+
+    '</div>';
+  }
+
+  // 还款历史（该姓名下所有借款的还款记录）
+  var loanIds = allLoans.map(function(l){return l.id;});
+  var repayments = state.allTx.filter(function(t){
+    return (t.type==='repay_lend' || t.type==='repay_borrow') && loanIds.indexOf(t.loanId) >= 0;
+  }).sort(function(a,b){return b.date.localeCompare(a.date);});
+
+  var repayHtml = '';
+  if (repayments.length === 0) {
+    repayHtml = '<div style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:13px;">暂无还款记录</div>';
+  } else {
+    for (var k=0;k<repayments.length;k++) {
+      var r = repayments[k];
+      repayHtml += '<div class="repay-history-item"><div><div class="repay-history-date">'+r.date+'</div>'+(r.note?'<div class="repay-history-note">'+r.note+'</div>':'')+'</div><div class="repay-history-amount">+'+fmt(r.amount)+'</div></div>';
+    }
+  }
+
+  body.innerHTML =
+    '<div class="loan-detail-header">'+
+      '<div class="loan-detail-person">'+loan.person+'</div>'+
+      '<div class="loan-detail-meta">'+typeLabel+' · 共 '+allLoans.length+' 笔 · '+activeCount+' 笔未还清</div>'+
+    '</div>'+
+    '<div class="loan-group-amount-row">'+
+      '<div class="loan-group-amount-item"><div class="label">总金额</div><div class="value" style="color:'+typeColor+'">'+fmt(totalAmount)+'</div></div>'+
+      '<div class="loan-group-amount-item"><div class="label">已还</div><div class="value" style="color:var(--income)">'+fmt(totalRepaid)+'</div></div>'+
+      '<div class="loan-group-amount-item"><div class="label">待还</div><div class="value" style="color:var(--expense)">'+fmt(totalRemaining)+'</div></div>'+
+    '</div>'+
+    '<div class="repay-history-title" style="margin-top:16px">借款明细（'+allLoans.length+'笔）</div>'+
+    '<div class="loan-group-summary" style="padding:8px 12px;margin-bottom:16px">'+detailHtml+'</div>'+
+    '<div class="repay-history-title">还款历史</div>'+repayHtml+
+    '<div class="loan-detail-actions">'+actionsHtml+'</div>';
+
+  document.getElementById('loan-detail-modal').classList.add('show');
+}
+function closeLoanDetail() { document.getElementById('loan-detail-modal').classList.remove('show'); }
+
+function openRepayForPerson(person, type) {
+  state.currentLoanPerson = person;
+  state.currentLoanType = type;
+  // 找到该姓名下的一笔借款作为currentLoanId（用于兼容）
+  var loan = state.allTx.find(function(t){return t.type===type && t.person===person && t.status!=='cleared' && t.status!=='dead';});
+  if (loan) state.currentLoanId = loan.id;
+  openRepayModal();
+}
+
+function openRepayModal() {
+  // 计算当前姓名下所有未还清借款的待还总额
+  var allLoans = state.allTx.filter(function(t){
+    return (t.type==='lend' || t.type==='borrow') && t.type===state.currentLoanType && t.person===state.currentLoanPerson && t.status!=='cleared' && t.status!=='dead';
+  });
+  var totalRemaining = 0;
+  for (var i=0;i<allLoans.length;i++) {
+    totalRemaining += allLoans[i].amount - (allLoans[i].repaidAmount || 0);
+  }
+  document.getElementById('repay-amount').value = '';
+  document.getElementById('repay-amount').placeholder = '待还总额 '+fmt(totalRemaining);
+  document.getElementById('repay-date').value = todayStr();
+  document.getElementById('repay-note').value = '';
+  closeLoanDetail();
+  document.getElementById('repay-modal').classList.add('show');
+}
+function closeRepayModal() { document.getElementById('repay-modal').classList.remove('show'); }
+
+async function submitRepay() {
+  var amount = parseFloat(document.getElementById('repay-amount').value);
+  if (!amount || amount<=0) { showToast('请输入有效金额'); return; }
+
+  // 获取当前姓名下所有未还清的借款记录（按日期升序）
+  var loans = state.allTx.filter(function(t){
+    return (t.type==='lend' || t.type==='borrow') && t.type===state.currentLoanType && t.person===state.currentLoanPerson && t.status!=='cleared' && t.status!=='dead';
+  }).sort(function(a,b){return a.date.localeCompare(b.date);});
+
+  if (loans.length === 0) { showToast('没有待还的借款'); return; }
+
+  // 计算总待还
+  var totalRemaining = 0;
+  for (var i=0;i<loans.length;i++) {
+    totalRemaining += loans[i].amount - (loans[i].repaidAmount || 0);
+  }
+  if (amount > totalRemaining + 0.001) { showToast('还款金额不能超过待还总额 '+fmt(totalRemaining)); return; }
+
+  var repayDate = document.getElementById('repay-date').value || todayStr();
+  var repayNote = document.getElementById('repay-note').value.trim();
+  var person = state.currentLoanPerson;
+  var loanType = state.currentLoanType;
+
+  try {
+    var remainingAmount = amount;
+    // 按时间顺序分配到各笔借款
+    for (var j=0;j<loans.length && remainingAmount > 0.001;j++) {
+      var l = loans[j];
+      var lRemaining = l.amount - (l.repaidAmount || 0);
+      var payAmount = Math.min(remainingAmount, lRemaining);
+
+      // 创建该笔的还款记录
+      var repayTx = {
+        type: loanType === 'lend' ? 'repay_lend' : 'repay_borrow',
+        category: l.category,
+        amount: payAmount,
+        note: (loanType==='lend'?'收回借款-':'归还借款-') + person + (repayNote?' · '+repayNote:''),
+        date: repayDate,
+        loanId: l.id,
+        person: person,
+        createdAt: Date.now()
+      };
+      await dbAdd(repayTx);
+
+      // 更新该笔借款
+      l.repaidAmount = (l.repaidAmount || 0) + payAmount;
+      if (l.repaidAmount >= l.amount - 0.001) {
+        l.repaidAmount = l.amount;
+        l.status = 'cleared';
+      } else {
+        l.status = 'partial';
+      }
+      await dbPut(l);
+
+      remainingAmount -= payAmount;
+    }
+
+    showToast('还款已记录');
+    closeRepayModal();
+    await loadAll();
+    if (state.currentView==='home') renderHome();
+    if (state.currentView==='bills') renderBills();
+    if (state.currentView==='stats') renderStats();
+  } catch(e) { showToast('操作失败: '+e.message); }
+}
+
+async function deleteLoan(loanId) {
+  if (!confirm('确定删除这笔借款？关联的还款记录也会同时删除。')) return;
+  try {
+    var person = state.currentLoanPerson;
+    var loanType = state.currentLoanType;
+    // 删除借款记录
+    await dbDelete(loanId);
+    // 删除关联的还款记录
+    var repayments = state.allTx.filter(function(t){
+      return (t.type==='repay_lend' || t.type==='repay_borrow') && t.loanId===loanId;
+    });
+    for (var i=0;i<repayments.length;i++) {
+      await dbDelete(repayments[i].id);
+    }
+    showToast('已删除');
+    closeLoanDetail();
+    await loadAll();
+    // 如果该姓名下还有借款，重新打开汇总详情页
+    var remaining = state.allTx.find(function(t){return t.type===loanType && t.person===person;});
+    if (remaining) openLoanDetail(remaining.id);
+    if (state.currentView==='home') renderHome();
+    if (state.currentView==='bills') renderBills();
+    if (state.currentView==='stats') renderStats();
+  } catch(e) { showToast('删除失败: '+e.message); }
+}
+
+async function markAsDead(loanId) {
+  if (!confirm('确定将这笔借款标记为死账？标记后将不再显示在主页和待收回中，但仍可在账单中查看。')) return;
+  try {
+    var loan = state.allTx.find(function(t){return t.id===loanId;});
+    if (!loan) return;
+    loan.status = 'dead';
+    await dbPut(loan);
+    showToast('已标记为死账');
+    closeLoanDetail();
+    await loadAll();
+    // 重新打开该姓名的汇总详情页
+    var remaining = state.allTx.find(function(t){return t.type===loan.type && t.person===loan.person;});
+    if (remaining) openLoanDetail(remaining.id);
+    if (state.currentView==='home') renderHome();
+    if (state.currentView==='bills') renderBills();
+    if (state.currentView==='stats') renderStats();
+  } catch(e) { showToast('操作失败: '+e.message); }
+}
+
+async function restoreFromDead(loanId) {
+  try {
+    var loan = state.allTx.find(function(t){return t.id===loanId;});
+    if (!loan) return;
+    loan.status = (loan.repaidAmount && loan.repaidAmount > 0) ? 'partial' : 'pending';
+    await dbPut(loan);
+    showToast('已恢复为正常');
+    closeLoanDetail();
+    await loadAll();
+    // 重新打开该姓名的汇总详情页
+    var remaining = state.allTx.find(function(t){return t.type===loan.type && t.person===loan.person;});
+    if (remaining) openLoanDetail(remaining.id);
+    if (state.currentView==='home') renderHome();
+    if (state.currentView==='bills') renderBills();
+    if (state.currentView==='stats') renderStats();
+  } catch(e) { showToast('操作失败: '+e.message); }
+}
+
+// ===== Wishlist =====
+function getMonthStr(d) { d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+
+async function loadWishlist() {
+  state.wishlist = await dbWishGetAll();
+  state.wishlist.sort(function(a,b){
+    var pa={high:0,medium:1,low:2};
+    if (a.status!==b.status) {
+      var order={pending:0,purchased:1,cancelled:2};
+      return order[a.status]-order[b.status];
+    }
+    if (a.status==='pending') {
+      if (pa[a.priority]!==pa[b.priority]) return pa[a.priority]-pa[b.priority];
+      if (a.planDate && b.planDate) return a.planDate.localeCompare(b.planDate);
+      if (a.planDate) return -1;
+      if (b.planDate) return 1;
+    }
+    return (b.createdAt||0)-(a.createdAt||0);
+  });
+}
+
+function renderWishlist() {
+  var list = state.wishlist;
+  if (state.wishlistFilter!=='all') {
+    list = list.filter(function(w){return w.status===state.wishlistFilter;});
+  }
+  // 汇总
+  var pendingCount=0, pendingAmount=0, purchasedAmount=0;
+  for (var i=0;i<state.wishlist.length;i++) {
+    var w=state.wishlist[i];
+    if (w.status==='pending') { pendingCount++; pendingAmount+=w.amount; }
+    else if (w.status==='purchased') { purchasedAmount+=w.actualAmount||w.amount; }
+  }
+  document.getElementById('wishlist-pending-count').textContent=pendingCount;
+  document.getElementById('wishlist-pending-amount').textContent=fmt(pendingAmount);
+  document.getElementById('wishlist-purchased-amount').textContent=fmt(purchasedAmount);
+  // 分类汇总（仅待购买）
+  var catSummaryEl=document.getElementById('wishlist-cat-summary');
+  var pendingList=state.wishlist.filter(function(w){return w.status==='pending';});
+  if (pendingList.length>0) {
+    var catStats={};
+    for (var j=0;j<pendingList.length;j++) {
+      if(!catStats[pendingList[j].category])catStats[pendingList[j].category]=0;
+      catStats[pendingList[j].category]+=pendingList[j].amount;
+    }
+    var catEntries=Object.entries(catStats).sort(function(a,b){return b[1]-a[1];});
+    var maxAmt=catEntries.length>0?catEntries[0][1]:1;
+    var catHtml='<div class="wishlist-cat-title">待购分类汇总</div>';
+    for (var k=0;k<catEntries.length;k++) {
+      var cat=getCategory('expense',catEntries[k][0]);
+      if(!cat)continue;
+      var pct=Math.min(catEntries[k][1]/maxAmt*100,100);
+      catHtml+='<div class="wishlist-cat-row">'+
+        '<div class="wishlist-cat-icon" style="background:'+cat.bg+';color:'+cat.color+';">'+(ICONS[cat.icon]||ICONS.more)+'</div>'+
+        '<div class="wishlist-cat-name">'+cat.name+'</div>'+
+        '<div class="wishlist-cat-bar"><div class="wishlist-cat-fill" style="width:'+pct+'%;background:'+cat.color+';"></div></div>'+
+        '<div class="wishlist-cat-amount">'+fmt(catEntries[k][1])+'</div>'+
+        '</div>';
+    }
+    catSummaryEl.innerHTML=catHtml;
+    catSummaryEl.style.display='block';
+  } else {
+    catSummaryEl.style.display='none';
+  }
+  // 列表
+  var listEl=document.getElementById('wishlist-list');
+  if (list.length===0) {
+    listEl.innerHTML='<div class="empty-state"><div class="empty-state-text">暂无待购记录</div></div>';
+    return;
+  }
+  var html='';
+  for (var m=0;m<list.length;m++) {
+    var item=list[m];
+    var cat=getCategory('expense',item.category);
+    var catColor=cat?cat.color:'#999';
+    var catBg=cat?cat.bg:'#f5f5f5';
+    var catIcon=cat?(ICONS[cat.icon]||ICONS.more):ICONS.more;
+    var priorityLabel={high:'高',medium:'中',low:'低'}[item.priority]||'中';
+    var metaParts=[];
+    if(cat)metaParts.push(cat.name);
+    if(item.planDate)metaParts.push('计划 '+item.planDate.slice(5));
+    if(item.note)metaParts.push(item.note);
+    var amountClass=item.status==='purchased'?' purchased':'';
+    var actionsHtml='';
+    if (item.status==='pending') {
+      actionsHtml='<div class="wishlist-actions">'+
+        '<button class="wishlist-action-btn buy" onclick="openWishlistBuy('+item.id+')" title="购买">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>'+
+        '<button class="wishlist-action-btn edit" onclick="editWishlist('+item.id+')" title="编辑">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
+        '<button class="wishlist-action-btn cancel" onclick="cancelWishlist('+item.id+')" title="取消">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'+
+        '</div>';
+    } else if (item.status==='purchased') {
+      actionsHtml='<div class="wishlist-actions">'+
+        '<button class="wishlist-action-btn cancel" onclick="deleteWishlist('+item.id+')" title="删除">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+        '</div>';
+    } else {
+      actionsHtml='<div class="wishlist-actions">'+
+        '<button class="wishlist-action-btn edit" onclick="restoreWishlist('+item.id+')" title="恢复">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>'+
+        '<button class="wishlist-action-btn cancel" onclick="deleteWishlist('+item.id+')" title="删除">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+        '</div>';
+    }
+    html+='<div class="wishlist-item">'+
+      '<div class="wishlist-icon" style="background:'+catBg+';color:'+catColor+';">'+catIcon+'</div>'+
+      '<div class="wishlist-info">'+
+        '<div class="wishlist-name">'+item.name+'<span class="wishlist-priority '+item.priority+'">'+priorityLabel+'</span></div>'+
+        '<div class="wishlist-meta">'+metaParts.join(' · ')+'</div>'+
+      '</div>'+
+      '<div class="wishlist-amount'+amountClass+'">'+fmt(item.actualAmount||item.amount)+'</div>'+
+      actionsHtml+
+      '</div>';
+  }
+  listEl.innerHTML=html;
+}
+
+function setWishlistFilter(f) {
+  state.wishlistFilter=f;
+  ['all','pending','purchased','cancelled'].forEach(function(k){
+    document.getElementById('wishlist-tab-'+k).classList.toggle('active',k===f);
+  });
+  renderWishlist();
+}
+
+function renderWishlistCategoryGrid() {
+  var grid=document.getElementById('wishlist-category-grid');
+  var cats=CATEGORIES.expense;
+  var html='';
+  for (var i=0;i<cats.length;i++) {
+    var c=cats[i];
+    html+='<div class="category-item '+(state.wishlistCategory===c.id?'selected':'')+'" onclick="setWishlistCategory(\''+c.id+'\')">'+
+      '<div class="category-item-icon" style="background:'+c.bg+';color:'+c.color+';">'+(ICONS[c.icon]||ICONS.more)+'</div>'+
+      '<div class="category-item-name">'+c.name+'</div></div>';
+  }
+  grid.innerHTML=html;
+}
+
+function setWishlistCategory(id) { state.wishlistCategory=id; renderWishlistCategoryGrid(); }
+
+function setWishlistPriority(p) {
+  state.wishlistPriority=p;
+  ['high','medium','low'].forEach(function(k){
+    document.getElementById('wishlist-priority-'+k).classList.toggle('selected',k===p);
+  });
+}
+
+function openWishlistAdd() {
+  state.wishlistEditingId=null;
+  state.wishlistCategory=null;
+  state.wishlistPriority='medium';
+  document.getElementById('wishlist-add-title').textContent='添加待购';
+  document.getElementById('wishlist-name').value='';
+  document.getElementById('wishlist-amount').value='';
+  document.getElementById('wishlist-plan-date').value='';
+  document.getElementById('wishlist-note').value='';
+  setWishlistPriority('medium');
+  renderWishlistCategoryGrid();
+  document.getElementById('wishlist-add-modal').classList.add('show');
+}
+
+function closeWishlistAdd() { document.getElementById('wishlist-add-modal').classList.remove('show'); }
+
+async function editWishlist(id) {
+  var item=state.wishlist.find(function(w){return w.id===id;});
+  if(!item)return;
+  state.wishlistEditingId=id;
+  state.wishlistCategory=item.category;
+  state.wishlistPriority=item.priority;
+  document.getElementById('wishlist-add-title').textContent='编辑待购';
+  document.getElementById('wishlist-name').value=item.name;
+  document.getElementById('wishlist-amount').value=item.amount;
+  document.getElementById('wishlist-plan-date').value=item.planDate||'';
+  document.getElementById('wishlist-note').value=item.note||'';
+  setWishlistPriority(item.priority);
+  renderWishlistCategoryGrid();
+  document.getElementById('wishlist-add-modal').classList.add('show');
+}
+
+async function saveWishlist() {
+  var name=document.getElementById('wishlist-name').value.trim();
+  var amount=parseFloat(document.getElementById('wishlist-amount').value);
+  if(!name){showToast('请输入物品名称');return;}
+  if(!amount||amount<=0){showToast('请输入有效金额');return;}
+  if(!state.wishlistCategory){showToast('请选择分类');return;}
+  var item={
+    name:name,
+    amount:amount,
+    category:state.wishlistCategory,
+    priority:state.wishlistPriority,
+    planDate:document.getElementById('wishlist-plan-date').value||'',
+    note:document.getElementById('wishlist-note').value.trim(),
+    status:'pending',
+    createdAt:Date.now()
+  };
+  try {
+    if(state.wishlistEditingId){
+      item.id=state.wishlistEditingId;
+      var old=state.wishlist.find(function(w){return w.id===state.wishlistEditingId;});
+      if(old){item.status=old.status;item.actualAmount=old.actualAmount;item.purchaseDate=old.purchaseDate;item.createdAt=old.createdAt;}
+      await dbWishPut(item);
+    } else {
+      await dbWishAdd(item);
+    }
+    showToast('已保存');
+    closeWishlistAdd();
+    await loadWishlist();
+    if(state.currentView==='wishlist')renderWishlist();
+  } catch(e){showToast('保存失败: '+e.message);}
+}
+
+async function cancelWishlist(id) {
+  if(!confirm('确定取消这条待购记录？'))return;
+  var item=state.wishlist.find(function(w){return w.id===id;});
+  if(!item)return;
+  item.status='cancelled';
+  await dbWishPut(item);
+  await loadWishlist();
+  if(state.currentView==='wishlist')renderWishlist();
+  showToast('已取消');
+}
+
+async function restoreWishlist(id) {
+  var item=state.wishlist.find(function(w){return w.id===id;});
+  if(!item)return;
+  item.status='pending';
+  delete item.actualAmount;
+  delete item.purchaseDate;
+  await dbWishPut(item);
+  await loadWishlist();
+  if(state.currentView==='wishlist')renderWishlist();
+  showToast('已恢复');
+}
+
+async function deleteWishlist(id) {
+  if(!confirm('确定删除这条记录？'))return;
+  await dbWishDelete(id);
+  await loadWishlist();
+  if(state.currentView==='wishlist')renderWishlist();
+  showToast('已删除');
+}
+
+function openWishlistBuy(id) {
+  var item=state.wishlist.find(function(w){return w.id===id;});
+  if(!item)return;
+  state.wishlistBuyId=id;
+  document.getElementById('wishlist-buy-name').textContent=item.name;
+  var cat=getCategory('expense',item.category);
+  document.getElementById('wishlist-buy-cat').textContent=cat?cat.name:'';
+  document.getElementById('wishlist-buy-amount').value=item.amount;
+  document.getElementById('wishlist-buy-date').value=todayStr();
+  document.getElementById('wishlist-buy-modal').classList.add('show');
+}
+function closeWishlistBuy(){document.getElementById('wishlist-buy-modal').classList.remove('show');}
+
+async function confirmWishlistBuy() {
+  var id=state.wishlistBuyId;
+  var item=state.wishlist.find(function(w){return w.id===id;});
+  if(!item)return;
+  var actualAmount=parseFloat(document.getElementById('wishlist-buy-amount').value);
+  var buyDate=document.getElementById('wishlist-buy-date').value||todayStr();
+  if(!actualAmount||actualAmount<=0){showToast('请输入有效金额');return;}
+  try {
+    // 生成支出记录
+    var tx={
+      type:'expense',
+      category:item.category,
+      subcategory:null,
+      amount:actualAmount,
+      note:item.name+(item.note?' · '+item.note:''),
+      date:buyDate,
+      createdAt:Date.now()
+    };
+    await dbAdd(tx);
+    // 更新待购记录
+    item.status='purchased';
+    item.actualAmount=actualAmount;
+    item.purchaseDate=buyDate;
+    await dbWishPut(item);
+    showToast('已购买并记账');
+    closeWishlistBuy();
+    await loadAll();
+    await loadWishlist();
+    if(state.currentView==='wishlist')renderWishlist();
+    if(state.currentView==='home')renderHome();
+    if(state.currentView==='bills')renderBills();
+    if(state.currentView==='stats')renderStats();
+  } catch(e){showToast('操作失败: '+e.message);}
+}
+
+// ===== Home =====
+// ===== Home =====
+async function loadAll() {
+  state.allTx = await dbGetAll();
+  state.allTx.sort(function(a,b){ if(a.date!==b.date)return b.date.localeCompare(a.date); return (b.createdAt||0)-(a.createdAt||0); });
+}
+
+function setHomePeriod(p) {
+  state.homePeriod = p;
+  ['week','month','year'].forEach(function(k){document.getElementById('period-'+k).classList.toggle('active',k===p);});
+  var labels = {week:'本周结余',month:'本月结余',year:'本年结余'};
+  document.getElementById('home-period-label').textContent = labels[p];
+  renderHome();
+}
+
+function renderHome() {
+  var now=new Date(), y=now.getFullYear(), m=now.getMonth(), d=now.getDate();
+  // 计算时间范围
+  var startDate, endDate;
+  if (state.homePeriod==='week') {
+    var day = now.getDay() || 7; // 周日=0转成7
+    var monday = new Date(y, m, d - day + 1);
+    var sunday = new Date(y, m, d - day + 7);
+    startDate = monday; endDate = sunday;
+  } else if (state.homePeriod==='year') {
+    startDate = new Date(y, 0, 1); endDate = new Date(y, 11, 31);
+  } else {
+    startDate = new Date(y, m, 1); endDate = new Date(y, m + 1, 0);
+  }
+  var startStr = startDate.getFullYear()+'-'+String(startDate.getMonth()+1).padStart(2,'0')+'-'+String(startDate.getDate()).padStart(2,'0');
+  var endStr = endDate.getFullYear()+'-'+String(endDate.getMonth()+1).padStart(2,'0')+'-'+String(endDate.getDate()).padStart(2,'0');
+
+  var periodTx = state.allTx.filter(function(t){return t.date>=startStr && t.date<=endStr;});
+
+  var income=0, expense=0, lend=0, borrow=0;
+  for (var i=0;i<periodTx.length;i++) {
+    var t=periodTx[i];
+    if (isIncome(t.type) || t.type==='borrow') income+=t.amount;
+    if (isExpense(t.type) || t.type==='lend') expense+=t.amount;
+    if (t.type==='lend') lend+=t.amount;
+    else if (t.type==='borrow') borrow+=t.amount;
+  }
+
+  // 待收回/待归还（排除死账）
+  var pendingLend=0, pendingBorrow=0;
+  for (var j=0;j<state.allTx.length;j++) {
+    var tx=state.allTx[j];
+    if (tx.type==='lend' && tx.status!=='cleared' && tx.status!=='dead') pendingLend += tx.amount - (tx.repaidAmount||0);
+    if (tx.type==='borrow' && tx.status!=='cleared' && tx.status!=='dead') pendingBorrow += tx.amount - (tx.repaidAmount||0);
+  }
+
+  document.getElementById('home-balance').textContent=fmt(income-expense);
+  document.getElementById('home-income').textContent=fmt(income);
+  document.getElementById('home-expense').textContent=fmt(expense);
+  document.getElementById('home-lend').textContent=fmt(lend);
+  document.getElementById('home-borrow').textContent=fmt(borrow);
+  document.getElementById('home-pending-lend').textContent=fmt(pendingLend);
+  document.getElementById('home-pending-borrow').textContent=fmt(pendingBorrow);
+
+  // 待还款列表（按姓名+类型分组）
+  var repayGroups = {};
+  for (var ri=0;ri<state.allTx.length;ri++) {
+    var rt = state.allTx[ri];
+    if ((rt.type==='lend'||rt.type==='borrow') && rt.status!=='cleared' && rt.status!=='dead') {
+      var key = rt.type + '|' + rt.person;
+      if (!repayGroups[key]) repayGroups[key] = {person:rt.person, type:rt.type, count:0, remaining:0};
+      repayGroups[key].count++;
+      repayGroups[key].remaining += rt.amount - (rt.repaidAmount||0);
+    }
+  }
+  var repayList = Object.values(repayGroups).sort(function(a,b){return b.remaining - a.remaining;});
+  var repaySection = document.getElementById('pending-repay-section');
+  var repayListEl = document.getElementById('pending-repay-list');
+  if (repayList.length === 0) {
+    repaySection.style.display = 'none';
+  } else {
+    repaySection.style.display = 'block';
+    var repayHtml = '';
+    for (var rk=0;rk<repayList.length;rk++) {
+      var rg = repayList[rk];
+      var isLend = rg.type === 'lend';
+      var typeLabel = isLend ? '待收回' : '待归还';
+      var typeColor = isLend ? 'var(--lend)' : 'var(--borrow)';
+      var typeBg = isLend ? 'var(--lend-bg)' : 'var(--borrow-bg)';
+      var typeIcon = isLend ?
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' :
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+      repayHtml += '<div class="pending-repay-item" onclick="openRepayForPerson(\''+rg.person.replace(/'/g,"\\'")+'\',\''+rg.type+'\')">'+
+        '<div class="pending-repay-icon" style="background:'+typeBg+';color:'+typeColor+'">'+typeIcon+'</div>'+
+        '<div class="pending-repay-info">'+
+          '<div class="pending-repay-name">'+rg.person+'<span class="tx-tag" style="background:'+typeBg+';color:'+typeColor+';font-size:10px;padding:1px 5px">'+typeLabel+'</span></div>'+
+          '<div class="pending-repay-meta">共 '+rg.count+' 笔 · 点击记录还款</div>'+
+        '</div>'+
+        '<div class="pending-repay-amount" style="color:'+typeColor+'">'+fmt(rg.remaining)+'</div>'+
+      '</div>';
+    }
+    repayListEl.innerHTML = repayHtml;
+  }
+
+  // 最近记录（排除死账）
+  var recent = state.allTx.filter(function(t){return !(t.type==='lend'||t.type==='borrow') || t.status!=='dead';}).slice(0,10);
+  document.getElementById('home-recent-list').innerHTML = recent.length===0 ?
+    '<div class="empty-state"><div class="empty-state-text">还没有记录，点击下方按钮开始记账</div></div>' : renderTxGroups(recent);
+}
+
+function renderTxGroups(txs) {
+  if (txs.length===0) return '<div class="empty-state"><div class="empty-state-text">暂无记录</div></div>';
+  var groups={};
+  for (var i=0;i<txs.length;i++) { if(!groups[txs[i].date])groups[txs[i].date]=[]; groups[txs[i].date].push(txs[i]); }
+  var dates=Object.keys(groups).sort(function(a,b){return b.localeCompare(a)});
+  var html='';
+  for (var d=0;d<dates.length;d++) {
+    var date=dates[d], dayTx=groups[date], inc=0, exp=0;
+    for (var k=0;k<dayTx.length;k++) {
+      if(isIncome(dayTx[k].type))inc+=dayTx[k].amount;
+      else if(isExpense(dayTx[k].type))exp+=dayTx[k].amount;
+    }
+    var dt=new Date(date), weekday=['周日','周一','周二','周三','周四','周五','周六'][dt.getDay()];
+    var summary=''; if(inc>0)summary+='收 '+fmt(inc)+'  '; if(exp>0)summary+='支 '+fmt(exp);
+    html+='<div class="tx-group"><div class="tx-group-header"><span class="tx-group-date">'+(dt.getMonth()+1)+'月'+dt.getDate()+'日 '+weekday+'</span><span class="tx-group-summary">'+summary+'</span></div>';
+    for (var j=0;j<dayTx.length;j++) html+=renderTxItem(dayTx[j]);
+    html+='</div>';
+  }
+  return html;
+}
+
+function renderTxItem(tx) {
+  var catType = tx.type;
+  if (tx.type==='repay_lend') catType='income';
+  if (tx.type==='repay_borrow') catType='expense';
+  if (tx.type==='lend') catType='lend';
+  if (tx.type==='borrow') catType='borrow';
+  var cat=getCategory(catType,tx.category);
+  var catName=cat?cat.name:'未知';
+  var catColor=cat?cat.color:'#999';
+  var catBg=cat?cat.bg:'#f5f5f5';
+  var catIcon=cat?(ICONS[cat.icon]||ICONS.more):ICONS.more;
+
+  // 显示名称
+  var displayName = catName;
+  var tagHtml = '';
+  if (tx.type==='lend') { displayName = '借出 · ' + (tx.person||''); tagHtml='<span class="tx-tag lend">借出</span>'; }
+  else if (tx.type==='borrow') { displayName = '借入 · ' + (tx.person||''); tagHtml='<span class="tx-tag borrow">借入</span>'; }
+  else if (tx.type==='repay_lend' || tx.type==='repay_borrow') { tagHtml='<span class="tx-tag repay">还款</span>'; }
+  if (tx.type==='expense' && tx.paymentMethod==='huabei') { tagHtml += '<span class="tx-tag" style="background:#F4ECF7;color:#9B59B6">花呗</span>'; }
+
+  // 备注显示
+  var noteText = '';
+  if (tx.subcategory) noteText = tx.subcategory;
+  if (tx.note) noteText = noteText ? noteText + ' · ' + tx.note : tx.note;
+  if (tx.type==='lend' || tx.type==='borrow') {
+    var remaining = tx.amount - (tx.repaidAmount||0);
+    var statusText = tx.status==='cleared' ? '已还清' : (tx.status==='partial' ? '已还'+fmt(tx.repaidAmount)+' / 待还'+fmt(remaining) : (tx.status==='dead' ? '死账（收不回）' : '待还'+fmt(remaining)));
+    noteText = statusText + (tx.note?' · '+tx.note:'');
+  }
+
+  // 金额颜色和符号
+  var amountClass = '';
+  var amountPrefix = '';
+  if (isExpense(tx.type) || tx.type==='lend') { amountClass='expense'; amountPrefix='-'; }
+  else if (isIncome(tx.type) || tx.type==='borrow') { amountClass='income'; amountPrefix='+'; }
+  if (tx.type==='lend') amountClass='lend';
+  if (tx.type==='borrow') amountClass='borrow';
+
+  // 点击行为：借款记录打开详情，其他打开编辑
+  var onclick = (tx.type==='lend' || tx.type==='borrow') ? 'openLoanDetail('+tx.id+')' : 'openEditModal('+tx.id+')';
+
+  return '<div class="tx-item" onclick="'+onclick+'">'+
+    '<div class="tx-icon" style="background:'+catBg+';color:'+catColor+';">'+catIcon+'</div>'+
+    '<div class="tx-info"><div class="tx-category">'+displayName+tagHtml+'</div><div class="tx-note">'+noteText+'</div></div>'+
+    '<div class="tx-amount '+amountClass+'">'+amountPrefix+fmt(tx.amount)+'</div></div>';
+}
+
+function openEditModal(id) {
+  var tx = state.allTx.find(function(t){return t.id===id;});
+  if (!tx) return;
+  // 借款记录打开详情页
+  if (tx.type==='lend' || tx.type==='borrow') { openLoanDetail(tx.id); return; }
+  state.editingId = tx.id;
+  state.txType = tx.type;
+  state.txCategory = tx.category;
+  state.txSubcategory = tx.subcategory;
+  state.txPaymentMethod = tx.paymentMethod || 'normal';
+  document.getElementById('add-modal-title').textContent = '编辑记录';
+  document.getElementById('tx-amount').value = tx.amount;
+  document.getElementById('tx-note').value = tx.note || '';
+  document.getElementById('tx-date').value = tx.date;
+  setPaymentMethod(state.txPaymentMethod);
+  setTxType(tx.type);
+  document.getElementById('tx-delete-btn').style.display = 'block';
+  document.getElementById('add-modal').classList.add('show');
+}
+
+async function deleteTransaction() {
+  if (!state.editingId) return;
+  if (!confirm('确定删除这条记录？')) return;
+  try {
+    var tx = state.allTx.find(function(t){return t.id===state.editingId;});
+    // 如果是花呗支出，同时删除关联的借入记录
+    if (tx && tx.type==='expense' && tx.paymentMethod==='huabei' && tx.huabeiLoanId) {
+      await dbDelete(tx.huabeiLoanId);
+    }
+    await dbDelete(state.editingId);
+    showToast('已删除');
+    closeAddModal();
+    await loadAll();
+    if (state.currentView==='home') renderHome();
+    if (state.currentView==='bills') renderBills();
+    if (state.currentView==='stats') renderStats();
+  } catch(e) { showToast('删除失败: '+e.message); }
+}
+
+// ===== Bills =====
+function changeBillsMonth(delta) { state.billsMonth=new Date(state.billsMonth.getFullYear(),state.billsMonth.getMonth()+delta,1); renderBills(); }
+function setBillsFilter(f) {
+  state.billsFilter=f;
+  ['all','expense','income','loan'].forEach(function(id){document.getElementById('filter-'+id).classList.toggle('active',id===f);});
+  renderBills();
+}
+function renderBills() {
+  var y=state.billsMonth.getFullYear(), m=state.billsMonth.getMonth();
+  document.getElementById('bills-month-label').textContent=y+'年'+(m+1)+'月';
+  var search=document.getElementById('bills-search').value.trim().toLowerCase();
+  var txs=state.allTx.filter(function(t){
+    var d=new Date(t.date);
+    if(d.getFullYear()!==y||d.getMonth()!==m)return false;
+    if(state.billsFilter==='expense' && !isExpense(t.type))return false;
+    if(state.billsFilter==='income' && !isIncome(t.type))return false;
+    if(state.billsFilter==='loan' && !isLoan(t.type))return false;
+    if(search){
+      var cat=getCategory(t.type,t.category);
+      var hay=(t.note+' '+(t.subcategory||'')+' '+(t.person||'')+' '+(cat?cat.name:'')).toLowerCase();
+      if(hay.indexOf(search)===-1)return false;
+    }
+    return true;
+  });
+  document.getElementById('bills-list').innerHTML=renderTxGroups(txs);
+}
+
+// ===== Stats =====
+var pieChart=null,trendChart=null,barChart=null;
+function setStatsPeriod(p) {
+  state.statsPeriod=p;
+  document.querySelectorAll('.stats-period-tab').forEach(function(tab,i){tab.classList.toggle('active',['month','halfyear','year'][i]===p);});
+  renderStats();
+}
+function changeStatsPeriod(delta) {
+  if(state.statsPeriod==='month') state.statsDate=new Date(state.statsDate.getFullYear(),state.statsDate.getMonth()+delta,1);
+  else state.statsDate=new Date(state.statsDate.getFullYear()+delta,0,1);
+  renderStats();
+}
+function getPeriodTxs() {
+  var y=state.statsDate.getFullYear();
+  if(state.statsPeriod==='month'){var m=state.statsDate.getMonth();return state.allTx.filter(function(t){var d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m;});}
+  return state.allTx.filter(function(t){var d=new Date(t.date);return d.getFullYear()===y;});
+}
+function getCategoryStats(txs,typeFilter,catType) {
+  var stats={};
+  txs.filter(function(t){return typeFilter(t.type);}).forEach(function(t){if(!stats[t.category])stats[t.category]=0;stats[t.category]+=t.amount;});
+  return Object.entries(stats).map(function(e){return {cat:getCategory(catType,e[0]),amount:e[1]};}).filter(function(x){return x.cat;}).sort(function(a,b){return b.amount-a.amount;});
+}
+
+async function renderStats() {
+  var y=state.statsDate.getFullYear(), label='';
+  if(state.statsPeriod==='month')label=y+'年'+(state.statsDate.getMonth()+1)+'月';
+  else if(state.statsPeriod==='halfyear')label=y+'年 上下半年';
+  else label=y+'年';
+  document.getElementById('stats-period-text').textContent=label;
+
+  var txs=getPeriodTxs(), income=0, expense=0, lend=0, borrow=0;
+  for(var i=0;i<txs.length;i++){
+    if(isIncome(txs[i].type))income+=txs[i].amount;
+    else if(isExpense(txs[i].type))expense+=txs[i].amount;
+    else if(txs[i].type==='lend')lend+=txs[i].amount;
+    else if(txs[i].type==='borrow')borrow+=txs[i].amount;
+  }
+  // 待收回/待归还（全部未还的）
+  var pendingLend=0,pendingBorrow=0;
+  for(var j=0;j<state.allTx.length;j++){
+    if(state.allTx[j].type==='lend'&&state.allTx[j].status!=='cleared'&&state.allTx[j].status!=='dead')pendingLend+=state.allTx[j].amount-(state.allTx[j].repaidAmount||0);
+    if(state.allTx[j].type==='borrow'&&state.allTx[j].status!=='cleared'&&state.allTx[j].status!=='dead')pendingBorrow+=state.allTx[j].amount-(state.allTx[j].repaidAmount||0);
+  }
+
+  var content=document.getElementById('stats-content');
+  content.innerHTML =
+    '<div class="stats-summary-row">'+
+      '<div class="stats-summary-card"><div class="label">收入</div><div class="value income">'+fmt(income)+'</div></div>'+
+      '<div class="stats-summary-card"><div class="label">支出</div><div class="value expense">'+fmt(expense)+'</div></div>'+
+      '<div class="stats-summary-card"><div class="label">结余</div><div class="value balance">'+fmt(income-expense)+'</div></div>'+
+    '</div>'+
+    '<div class="stats-summary-row">'+
+      '<div class="stats-summary-card"><div class="label">借出</div><div class="value lend">'+fmt(lend)+'</div></div>'+
+      '<div class="stats-summary-card"><div class="label">借入</div><div class="value borrow">'+fmt(borrow)+'</div></div>'+
+      '<div class="stats-summary-card"><div class="label">待收回</div><div class="value" style="color:var(--lend)">'+fmt(pendingLend)+'</div></div>'+
+      '<div class="stats-summary-card"><div class="label">待归还</div><div class="value" style="color:var(--borrow)">'+fmt(pendingBorrow)+'</div></div>'+
+    '</div>'+
+    '<div class="chart-container"><div class="chart-title">支出分类占比</div><div class="chart-box" id="pie-chart"></div></div>'+
+    '<div class="chart-container"><div class="chart-title">借款概览</div><div class="chart-box" id="loan-chart"></div></div>'+
+    '<div class="section-title" style="padding:8px 16px 10px;"><span>支出排行</span></div><div class="ranking-list" id="ranking-list"></div>'+
+    '<div class="section-title" style="padding:12px 16px 10px;"><span>借款排行（按人）</span></div><div class="ranking-list" id="loan-ranking-list"></div>';
+
+  setTimeout(function(){
+    var isDark=document.documentElement.getAttribute('data-theme')==='dark';
+    // 支出饼图
+    var expStats = getCategoryStats(txs, isExpense, 'expense');
+    var pieEl=document.getElementById('pie-chart');
+    if(pieEl){if(pieChart)pieChart.dispose();pieChart=echarts.init(pieEl);
+      var pieData=expStats.map(function(s){return{name:s.cat.name,value:Number(s.amount.toFixed(2)),itemStyle:{color:s.cat.color}};});
+      pieChart.setOption({tooltip:{trigger:'item',formatter:function(p){return p.name+': \u00A5'+fmt(p.value)+' ('+p.percent+'%)';},confine:true},legend:{type:'scroll',bottom:0,textStyle:{color:isDark?'#999':'#666',fontSize:11}},series:[{type:'pie',radius:['40%','65%'],center:['50%','42%'],label:{show:true,position:'inside',formatter:function(p){return p.percent>8?p.name+'\n'+p.percent+'%':'';},fontSize:11,color:'#fff'},labelLine:{show:false},data:pieData.length?pieData:[{name:'暂无数据',value:1,itemStyle:{color:'#ddd'}}]}]});
+      new ResizeObserver(function(){pieChart.resize();}).observe(pieEl);}
+    // 借款概览图（借出/借入/待收回/待归还 柱状图）
+    var loanEl=document.getElementById('loan-chart');
+    if(loanEl){var lc=echarts.init(loanEl);
+      lc.setOption({tooltip:{trigger:'axis',confine:true},grid:{left:'15%',right:'5%',top:'10%',bottom:'10%'},xAxis:{type:'category',data:['借出','借入','待收回','待归还'],axisLabel:{color:isDark?'#999':'#999',fontSize:11}},yAxis:{type:'value',axisLabel:{color:isDark?'#999':'#999',fontSize:10},splitLine:{lineStyle:{color:isDark?'#333':'#eee'}}},series:[{type:'bar',data:[{value:Number(lend.toFixed(2)),itemStyle:{color:'#E67E22'}},{value:Number(borrow.toFixed(2)),itemStyle:{color:'#2980B9'}},{value:Number(pendingLend.toFixed(2)),itemStyle:{color:'#E74C3C'}},{value:Number(pendingBorrow.toFixed(2)),itemStyle:{color:'#8E44AD'}}],barMaxWidth:40,itemStyle:{borderRadius:[4,4,0,0]},label:{show:true,position:'top',fontSize:10,color:isDark?'#ccc':'#666',formatter:function(p){return fmt(p.value);}}}]});
+      new ResizeObserver(function(){lc.resize();}).observe(loanEl);}
+    // 支出排行
+    var rankEl=document.getElementById('ranking-list');
+    if(rankEl){var total=0;for(var r=0;r<expStats.length;r++)total+=expStats[r].amount;
+      if(expStats.length===0)rankEl.innerHTML='<div class="empty-state"><div class="empty-state-text">暂无支出</div></div>';
+      else{var h='';for(var idx=0;idx<expStats.length;idx++){var s=expStats[idx];var pct=total>0?(s.amount/total*100).toFixed(1):0;var w=total>0?(s.amount/total*100):0;var nc=idx===0?'top1':idx===1?'top2':idx===2?'top3':'';
+        h+='<div class="ranking-item"><div class="ranking-num '+nc+'">'+(idx+1)+'</div><div class="ranking-icon" style="background:'+s.cat.bg+';color:'+s.cat.color+';">'+(ICONS[s.cat.icon]||ICONS.more)+'</div><div class="ranking-info"><div class="ranking-name">'+s.cat.name+'</div><div class="ranking-percent">'+pct+'%</div><div class="ranking-bar-bg"><div class="ranking-bar" style="width:'+w+'%;background:'+s.cat.color+';"></div></div></div><div class="ranking-amount">'+fmt(s.amount)+'</div></div>';}
+      rankEl.innerHTML=h;}}
+    // 借款排行（按人汇总）
+    var loanRankEl=document.getElementById('loan-ranking-list');
+    if(loanRankEl){
+      var personStats={};
+      state.allTx.filter(function(t){return (t.type==='lend'||t.type==='borrow') && t.status!=='dead';}).forEach(function(t){
+        var key=t.person+'_'+t.type;
+        if(!personStats[key])personStats[key]={person:t.person,type:t.type,total:0,repaid:0};
+        personStats[key].total+=t.amount;
+        personStats[key].repaid+=(t.repaidAmount||0);
+      });
+      var loanRank=Object.values(personStats).sort(function(a,b){return (b.total-b.repaid)-(a.total-a.repaid);});
+      if(loanRank.length===0)loanRankEl.innerHTML='<div class="empty-state"><div class="empty-state-text">暂无借款记录</div></div>';
+      else{
+        var maxRemaining=Math.max.apply(null,loanRank.map(function(x){return x.total-x.repaid;}));
+        var lh='';
+        for(var li=0;li<loanRank.length;li++){
+          var lr=loanRank[li];
+          var rem=lr.total-lr.repaid;
+          var lw=maxRemaining>0?(rem/maxRemaining*100):0;
+          var lcolor=lr.type==='lend'?'#E67E22':'#2980B9';
+          var lbg=lr.type==='lend'?'#FDF3E7':'#EBF5FB';
+          lh+='<div class="ranking-item"><div class="ranking-icon" style="background:'+lbg+';color:'+lcolor+';">'+(lr.type==='lend'?ICONS.user:ICONS.user)+'</div><div class="ranking-info"><div class="ranking-name">'+lr.person+' <span style="font-size:11px;color:'+lcolor+'">'+(lr.type==='lend'?'借出':'借入')+'</span></div><div class="ranking-percent">总额'+fmt(lr.total)+' · 已还'+fmt(lr.repaid)+'</div><div class="ranking-bar-bg"><div class="ranking-bar" style="width:'+lw+'%;background:'+lcolor+';"></div></div></div><div class="ranking-amount" style="color:'+lcolor+'">待还'+fmt(rem)+'</div></div>';
+        }
+        loanRankEl.innerHTML=lh;
+      }
+    }
+  },50);
+}
+
+// ===== Settings =====
+function toggleTheme() {
+  state.theme=state.theme==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',state.theme);
+  localStorage.setItem('ledger-theme',state.theme);
+  document.getElementById('theme-toggle').classList.toggle('on',state.theme==='dark');
+  if(state.currentView==='stats')renderStats();
+}
+function exportCSV() {
+  if(state.allTx.length===0){showToast('暂无数据可导出');return;}
+  var header='日期,类型,分类,子分类,对方姓名,金额,备注,借款状态,已还金额\n';
+  var rows='';
+  for(var i=0;i<state.allTx.length;i++){
+    var t=state.allTx[i];
+    var typeName=t.type==='expense'?'支出':t.type==='income'?'收入':t.type==='lend'?'借出':t.type==='borrow'?'借入':t.type==='repay_lend'?'收回借款':'归还借款';
+    var cat=getCategory(t.type==='repay_lend'?'income':t.type==='repay_borrow'?'expense':t.type,t.category);
+    rows+=[t.date,typeName,cat?cat.name:'',t.subcategory||'',t.person||'',t.amount.toFixed(2),(t.note||'').replace(/,/g,'，'),t.status||'',t.repaidAmount?t.repaidAmount.toFixed(2):''].join(',')+'\n';
+  }
+  var blob=new Blob(['\uFEFF'+header+rows],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='记账本_'+todayStr()+'.csv';a.click();URL.revokeObjectURL(url);
+  showToast('已导出 '+state.allTx.length+' 条记录');
+}
+async function importCSV(event) {
+  var file=event.target.files[0];if(!file)return;
+  try{var text=await file.text();var lines=text.replace(/^\uFEFF/,'').split('\n').filter(function(l){return l.trim();});
+    if(lines.length<2){showToast('文件格式不正确');return;}
+    var count=0;
+    for(var i=1;i<lines.length;i++){var cols=lines[i].split(',');if(cols.length<6)continue;
+      var date=cols[0].trim(),typeStr=cols[1].trim(),catName=cols[2].trim(),sub=cols[3].trim(),person=cols[4].trim(),amount=parseFloat(cols[5]),note=cols[6]?cols[6].trim():'';
+      if(!date||!amount||amount<=0)continue;
+      var type=typeStr==='收入'?'income':typeStr==='借出'?'lend':typeStr==='借入'?'borrow':typeStr==='收回借款'?'repay_lend':typeStr==='归还借款'?'repay_borrow':'expense';
+      var catType=type==='repay_lend'?'income':type==='repay_borrow'?'expense':type;
+      var cat=CATEGORIES[catType]?CATEGORIES[catType].find(function(c){return c.name===catName;}):null;
+      if(!cat)continue;
+      var tx={type:type,category:cat.id,subcategory:sub||null,amount:amount,note:note,date:date,createdAt:Date.now()};
+      if(type==='lend'||type==='borrow'){tx.person=person;tx.repaidAmount=0;tx.status='pending';}
+      await dbAdd(tx);count++;
+    }
+    await loadAll();showToast('成功导入 '+count+' 条记录');
+    if(state.currentView==='home')renderHome();if(state.currentView==='bills')renderBills();
+  }catch(e){showToast('导入失败: '+e.message);}
+  event.target.value='';
+}
+async function clearAllData() {
+  if(!confirm('确定要清空所有数据吗？此操作不可恢复！'))return;
+  await dbClear();await loadAll();showToast('已清空所有数据');renderHome();
+  if(state.currentView==='bills')renderBills();if(state.currentView==='stats')renderStats();
+}
+function showCategoryManage() {
+  var body=document.getElementById('category-modal-body');var html='';
+  [['expense','支出分类'],['income','收入分类'],['lend','借出分类'],['borrow','借入分类']].forEach(function(pair){
+    var type=pair[0],title=pair[1],cats=CATEGORIES[type];
+    html+='<div style="margin-bottom:20px;"><div style="font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text-secondary);">'+title+'</div>';
+    for(var i=0;i<cats.length;i++){var c=cats[i];
+      html+='<div style="display:flex;align-items:center;padding:10px 12px;background:var(--card);border-radius:8px;margin-bottom:6px;"><div style="width:32px;height:32px;border-radius:50%;background:'+c.bg+';color:'+c.color+';display:flex;align-items:center;justify-content:center;margin-right:10px;">'+(ICONS[c.icon]||ICONS.more)+'</div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">'+c.name+'</div>'+(c.sub?'<div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">'+c.sub.join('、')+'</div>':'')+'</div></div>';
+    }
+    html+='</div>';
+  });
+  body.innerHTML=html;document.getElementById('category-modal').classList.add('show');
+}
+function closeCategoryModal(){document.getElementById('category-modal').classList.remove('show');}
+
+// ===== PWA =====
+var deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;});
+function showInstallBanner(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;});}else{showToast('请点击浏览器菜单，选择"添加到主屏幕"进行安装',3500);}}
+function registerSW() {
+  if(!('serviceWorker' in navigator))return;
+  try{navigator.serviceWorker.register('service-worker.js').catch(function(){});}catch(e){}
+}
+
+// ===== Modal overlay click to close =====
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('add-modal').addEventListener('click',function(e){if(e.target===e.currentTarget)closeAddModal();});
+  document.getElementById('loan-detail-modal').addEventListener('click',function(e){if(e.target===e.currentTarget)closeLoanDetail();});
+  document.getElementById('repay-modal').addEventListener('click',function(e){if(e.target===e.currentTarget)closeRepayModal();});
+  document.getElementById('category-modal').addEventListener('click',function(e){if(e.target===e.currentTarget)closeCategoryModal();});
+  document.getElementById('wishlist-add-modal').addEventListener('click',function(e){if(e.target===e.currentTarget)closeWishlistAdd();});
+  document.getElementById('wishlist-buy-modal').addEventListener('click',function(e){if(e.target===e.currentTarget)closeWishlistBuy();});
+});
+
+// ===== Init =====
+async function init() {
+  var savedTheme=localStorage.getItem('ledger-theme');
+  if(savedTheme){state.theme=savedTheme;document.documentElement.setAttribute('data-theme',state.theme);document.getElementById('theme-toggle').classList.toggle('on',state.theme==='dark');}
+  await openDB();
+  await loadAll();
+  await loadWishlist();
+  renderHome();
+  registerSW();
+  fixSafeArea();
+}
+init();
+</script>
+</body>
+</html>
