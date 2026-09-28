@@ -39,7 +39,7 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text-primary);font-size:15px;line-height:1.5}
 body{display:flex;flex-direction:column}
-#app{flex:1;display:flex;flex-direction:column;overflow:hidden;max-width:640px;margin:0 auto;width:100%;position:relative}
+#app{flex:1;display:flex;flex-direction:column;overflow:hidden;max-width:640px;margin:0 auto;width:100%;position:relative;padding-top:60px!important}
 .view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:none;padding-bottom:calc(60px + env(safe-area-inset-bottom) + 16px)}
 .view.active{display:block}
 
@@ -780,14 +780,8 @@ function isLoan(type) { return type==='lend' || type==='borrow'; }
 
 // ===== Safe Area =====
 function fixSafeArea() {
-  var isStandalone = ('standalone' in navigator && navigator.standalone === true) ||
-                     (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-                     (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches);
-  if (!isStandalone) return;
-  var longSide = Math.max(screen.height, screen.width);
-  var statusBarHeight = longSide >= 812 ? 50 : 20;
   var app = document.getElementById('app');
-  if (app) app.style.paddingTop = statusBarHeight + 'px';
+  if (app) app.style.paddingTop = '60px';
 }
 
 // ===== Navigation =====
